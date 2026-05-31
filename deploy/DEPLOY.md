@@ -22,10 +22,18 @@ Phone / laptop anywhere
   Cloudflare edge (HTTPS)
         │
         ▼
-  cloudflared on Pi  ──►  nginx :8080  ──►  /var/www/kpss-dashboard (Vite dist/)
+  cloudflared on Pi  ──►  nginx :8080  ──┬─►  /var/www/kpss-dashboard (Vite dist/)
+                                         └─►  /api/  ──►  kpss-api (Node :8090)
+                                                              │
+                                                              ▼
+                                                  /var/lib/kpss-dashboard/*.json
 ```
 
-Data stays in the browser (IndexedDB). The Pi only serves static files.
+Study data lives **on the Pi**, not in the browser. A small Node service
+(`server/server.js`, run by the `kpss-api` systemd unit) stores one JSON file
+per user under `/var/lib/kpss-dashboard`. nginx serves the static app and
+proxies `/api/` to that service. There are two hardcoded users (Ahmet,
+Kübişko) and no login — the app just picks which account it is.
 
 ---
 
@@ -41,6 +49,10 @@ chmod +x deploy/setup-pi.sh
 ```
 
 This installs nginx and cloudflared and configures nginx on port **8080**.
+
+> The all-in-one `deploy/deploy-on-pi.sh` (run on the Pi) additionally installs
+> Node, builds the app, and sets up the `kpss-api` storage service + data dir.
+> Prefer it if you build directly on the Pi.
 
 ---
 
@@ -132,15 +144,39 @@ Copy the printed `https://….trycloudflare.com` URL. Ctrl+C stops it.
 
 ---
 
+## The storage API (data on the Pi)
+
+The Node service stores per-user data under `/var/lib/kpss-dashboard`:
+
+```bash
+sudo systemctl status kpss-api          # is it running?
+sudo journalctl -u kpss-api -f          # logs
+curl http://127.0.0.1:8080/api/health   # {"ok":true,"users":["ahmet","kubisko"]}
+ls /var/lib/kpss-dashboard              # ahmet.json, kubisko.json
+```
+
+Back up the whole thing by copying that folder:
+
+```bash
+sudo cp -r /var/lib/kpss-dashboard ~/kpss-backup-$(date +%F)
+```
+
 ## Updating after code changes
 
-From your dev machine:
+**Front-end only** (HTML/CSS/JS) — from your dev machine:
 
 ```bash
 ./deploy/sync-to-pi.sh pi@raspberrypi.local
 ```
 
 No restart needed — nginx serves files directly. Hard-refresh the browser if assets look cached.
+
+**Server / API changes** (`server/server.js`) — on the Pi, pull and rerun the
+all-in-one script (it restarts `kpss-api`):
+
+```bash
+cd ~/kpss_dashboard && git pull && ./deploy/deploy-on-pi.sh
+```
 
 ---
 
@@ -158,6 +194,6 @@ No restart needed — nginx serves files directly. Hard-refresh the browser if a
 
 ## Security notes
 
-- The app has **no login** — anyone with the URL can open it. Their data is still local to their browser.
-- Optional: add **Cloudflare Access** (Zero Trust) to require email/Google login before reaching the site.
-- Use **Ayarlar → Dışa Aktar** in the app to back up study data; each device/browser has its own IndexedDB.
+- The app has **no login** — anyone with the URL can open it, pick either user, and read/write that user's data on the Pi.
+- Strongly recommended: add **Cloudflare Access** (Zero Trust) to require email/Google login before reaching the site, since data now lives on the server.
+- Use **Ayarlar → Dışa Aktar** in the app for a per-user JSON backup, or copy `/var/lib/kpss-dashboard` on the Pi for everything.

@@ -2,9 +2,10 @@
    KPSS Çalışma Paneli — application bootstrap.
    ============================================================ */
 import "./styles.css";
-import { APP_BUILD, PAGES } from "./config.js";
+import { APP_BUILD, PAGES, setActiveProfile } from "./config.js";
 import { Store } from "./store.js";
-import { migrateLegacy, hydrate, DB } from "./state.js";
+import { hydrate, DB } from "./state.js";
+import { getUser, setUser } from "./user.js";
 import { $, toast, todayStr } from "./utils.js";
 import { applyTheme } from "./theme.js";
 import { nav, registerPageRenderer } from "./nav.js";
@@ -18,7 +19,25 @@ import { updateSessWrongHint } from "./features/books.js";
 import { refreshAll } from "./refresh.js";
 import { setupEventListeners } from "./actions.js";
 
+function setupUserSwitcher(activeUser, profile) {
+  const sel = $("userSelect");
+  if (sel) {
+    sel.value = activeUser;
+    sel.addEventListener("change", (e) => setUser(e.target.value));
+  }
+  const whoTop = $("activeUserTop");
+  if (whoTop) whoTop.textContent = profile.name;
+  const exam = $("activeExam");
+  if (exam) exam.textContent = profile.examName;
+}
+
 async function init() {
+  const user = getUser();
+  const profile = setActiveProfile(user);
+  Store.setUser(user);
+  setupUserSwitcher(user, profile);
+  document.title = `${profile.name} · KPSS Paneli`;
+
   setupEventListeners();
   registerPageRenderer("analiz", renderAnalytics);
   registerPageRenderer("tekrar", renderReviews);
@@ -27,12 +46,11 @@ async function init() {
   try {
     await Store.open();
   } catch (e) {
-    toast(e && e.message ? e.message : "Veritabanı açılamadı.", true);
+    toast(e && e.message ? e.message : "Veri sunucusuna ulaşılamadı.", true);
     console.error(e);
     return;
   }
   try {
-    await migrateLegacy();
     await hydrate();
   } catch (e) {
     toast("Veriler yüklenemedi.", true);

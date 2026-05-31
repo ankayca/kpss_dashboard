@@ -1,0 +1,26 @@
+# KPSS storage API — runs the per-user JSON server on the Pi.
+#
+# Install:
+#   sudo cp deploy/kpss-api.service /etc/systemd/system/kpss-api.service
+#   # edit User= and the two paths below if your clone is elsewhere
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now kpss-api
+#
+# Data is stored in /var/lib/kpss-dashboard (survives redeploys).
+
+[Unit]
+Description=KPSS Dashboard storage API
+After=network.target
+
+[Service]
+Type=simple
+User=croupion
+WorkingDirectory=/home/croupion/kpss_dashboard
+ExecStart=/usr/bin/node /home/croupion/kpss_dashboard/server/server.js
+Environment=PORT=8090
+Environment=KPSS_DATA_DIR=/var/lib/kpss-dashboard
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

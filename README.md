@@ -4,34 +4,46 @@ Offline-first study tracker for the Turkish KPSS exam. Tracks per-topic mistakes
 on practice tests, full mock exams (with automatic net calculation), spaced-repetition
 review queues, and an analytics dashboard (charts, mastery scores, study streaks).
 
-All data lives locally in the browser (**IndexedDB**) — nothing is sent to a server.
-Use **Ayarlar → Dışa Aktar** to back up to JSON and **İçe Aktar** to restore.
+Data is stored **on the server** (a small Node API on the Raspberry Pi), one
+JSON file per user. There are two hardcoded users — **Ahmet** (KPSS Lisans
+GY-GK) and **Kübişko** (AGS · Okul Öncesi Öğretmenliği) — and no login; the app
+just picks which account it is. Switch users from the sidebar.
+Use **Ayarlar → Dışa Aktar** to back up a user to JSON and **İçe Aktar** to restore.
 
 ## Tech stack
 
 - Vanilla JS, split into ES modules and bundled with **Vite**
 - **Chart.js** for the analytics charts
-- **IndexedDB** for persistence (behind a small swappable `Store` interface)
+- **Server-side persistence**: a zero-dependency Node HTTP API (`server/`)
+  storing per-user JSON, behind a small swappable `Store` interface
 - **Vitest** for unit tests of the pure logic layer
 
 ## Getting started
 
 ```bash
 npm install      # install dependencies
-npm run dev      # start the Vite dev server (http://localhost:5173)
+npm run server   # start the storage API on http://localhost:8090
+npm run dev      # start the Vite dev server (proxies /api → :8090)
 npm run build    # production build into dist/
 npm run preview  # preview the production build
 npm test         # run the unit tests
 ```
 
+Run `npm run server` and `npm run dev` together during development. Locally the
+API writes JSON files to `server/data/` (git-ignored); on the Pi it uses
+`/var/lib/kpss-dashboard`.
+
 ## Project structure
 
 ```
 index.html              Markup only (no inline styles or scripts)
+server/
+  server.js             Zero-dependency storage API (per-user JSON on disk)
 src/
-  main.js               Bootstrap / init
-  config.js             Static config: sections, topics, reasons, intervals
-  store.js              IndexedDB layer (the only place coupled to storage)
+  main.js               Bootstrap / init (selects user + profile)
+  config.js             Per-user profiles (sections/topics), reasons, intervals
+  user.js               Hardcoded users + selection persistence
+  store.js              Server API client (the only place coupled to storage)
   data.js               Defensive normalization for DB rows & imported JSON
   state.js              In-memory cache (DB), hydrate, persist, legacy migration
   domain.js             Pure domain logic (mastery, streaks, net, tagging)
@@ -57,7 +69,11 @@ test/
 - The render layer is synchronous and reads from the in-memory `DB` cache.
   Every write goes through `Store` first, then updates the cache, so a failed
   write surfaces an error toast without corrupting the in-memory state.
-- Storage is isolated in `store.js`. Moving to a cloud backend only requires
-  re-implementing its `open / all / put / del / clear / getMeta / setMeta` API.
-- All untrusted input (IndexedDB rows, imported JSON) passes through `data.js`
+- Storage is isolated in `store.js`, which speaks to the Node API in `server/`
+  over `fetch`. The interface (`open / all / put / del / clear / getMeta /
+  setMeta` + `setUser`) is unchanged, so swapping backends stays a one-file job.
+- Each user studies for a different exam, so `config.js` holds a profile per
+  user. `setActiveProfile()` (called once at boot) points `SECTIONS` /
+  `SECTION_KEYS` at the active user's sections before anything renders.
+- All untrusted input (server rows, imported JSON) passes through `data.js`
   normalizers, which drop or clamp invalid records.

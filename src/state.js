@@ -77,22 +77,3 @@ export async function hydrate() {
     notifyReviews: notifyReviews === true
   };
 }
-
-/** One-time migration of the original localStorage payload into IndexedDB. */
-export async function migrateLegacy() {
-  if (await Store.getMeta("_migrated")) return;
-  const raw = localStorage.getItem("kpss_dashboard_v1");
-  if (raw) {
-    try {
-      const p = JSON.parse(raw);
-      for (const b of p.books || []) await Store.put("books", b);
-      for (const s of p.sessions || []) await Store.put("sessions", s);
-      for (const t of p.trials || []) await Store.put("trials", t);
-      if (p.settings && p.settings.examDate) await Store.setMeta("examDate", p.settings.examDate);
-      toast("Eski veriler veritabanına taşındı.");
-    } catch (e) {
-      console.warn("migrate failed", e);
-    }
-  }
-  await Store.setMeta("_migrated", true);
-}

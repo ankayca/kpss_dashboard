@@ -10,14 +10,22 @@
 <div class="topbar">
   <button class="menu-toggle" data-action="toggleSidebar" aria-label="Menü">≡</button>
   <span class="ttl">KPSS Paneli</span>
+  <strong class="topbar-user" id="activeUserTop">—</strong>
 </div>
 <div class="backdrop" id="backdrop" data-action="toggleSidebar"></div>
 
 <aside class="sidebar" id="sidebar">
   <div class="brand">
     <span class="logo">K</span>
-    <span>KPSS Paneli<small>Çalışma Takip Sistemi</small></span>
+    <span>KPSS Paneli<small id="activeExam">Çalışma Takip Sistemi</small></span>
   </div>
+  <label class="user-switch">
+    <span class="user-switch-label">Kullanıcı</span>
+    <select id="userSelect" aria-label="Kullanıcı seç">
+      <option value="ahmet">Ahmet</option>
+      <option value="kubisko">Kübişko</option>
+    </select>
+  </label>
   <button class="nav-btn active" data-page="konu">Konu Testleri</button>
   <button class="nav-btn" data-page="deneme">Genel Denemeler</button>
   <button class="nav-btn" data-page="alan">Alan Denemeleri</button>
@@ -27,7 +35,7 @@
   <div class="sidebar-foot">
     <button class="theme-btn" id="themeBtn" data-action="toggleTheme">Koyu tema</button>
     <div class="build-tag" id="buildTag">Tema: Siyah / Kırmızı</div>
-    <div class="sidebar-note">Verilerin tarayıcı veritabanında (IndexedDB) saklanır. Ayarlar → Dışa Aktar ile yedek al.</div>
+    <div class="sidebar-note">Verilerin Raspberry Pi sunucusunda saklanır. Her kullanıcının verisi ayrıdır. Ayarlar → Dışa Aktar ile yedek alabilirsin.</div>
   </div>
 </aside>
 

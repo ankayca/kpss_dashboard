@@ -1,100 +1,92 @@
 /* ============================================================
-   STORAGE LAYER — IndexedDB.
-   Swapping to a cloud backend means re-implementing only this
-   module's interface (open / all / put / del / clear / getMeta /
-   setMeta). The layer above stays async and untouched.
+   STORAGE LAYER — server-backed (the Raspberry Pi), per user.
+
+   Talks to the minimal JSON API in /server/server.js. Data lives
+   on the server, not in the browser. This module keeps the exact
+   same async interface the rest of the app already used for
+   IndexedDB (open / all / put / del / clear / getMeta / setMeta),
+   plus setUser() to namespace requests per account.
    ============================================================ */
 
-const DB_NAME = "kpss_db";
-const VERSION = 3;
+const API_BASE = "/api";
 export const COLLECTIONS = ["books", "sessions", "trials", "subjectTrials", "reviews"];
 
-let idb = null;
-let ready = null;
+let currentUser = "ahmet";
+let online = false;
 
-function attachHandlers(db) {
-  idb = db;
-  idb.onversionchange = () => {
-    db.close();
-    idb = null;
-    ready = null;
-  };
-  idb.onclose = () => {
-    idb = null;
-    ready = null;
-  };
+/** Namespace all subsequent requests to a given account. */
+export function setUser(user) {
+  currentUser = user;
 }
 
-export function open() {
-  if (ready) return ready;
-  if (typeof indexedDB === "undefined" || !indexedDB) {
-    ready = Promise.reject(new Error("IndexedDB desteklenmiyor"));
-    return ready;
+function base() {
+  return `${API_BASE}/u/${encodeURIComponent(currentUser)}`;
+}
+
+async function api(pathSuffix, options = {}) {
+  let res;
+  try {
+    res = await fetch(base() + pathSuffix, {
+      headers: options.body ? { "Content-Type": "application/json" } : undefined,
+      ...options
+    });
+  } catch (e) {
+    throw new Error("Sunucuya ulaşılamadı (Raspberry Pi çalışıyor mu?)");
   }
-  ready = new Promise((res, rej) => {
-    const r = indexedDB.open(DB_NAME, VERSION);
-    r.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      COLLECTIONS.forEach((c) => {
-        if (!db.objectStoreNames.contains(c)) db.createObjectStore(c, { keyPath: "id" });
-      });
-      if (!db.objectStoreNames.contains("meta")) db.createObjectStore("meta", { keyPath: "key" });
-    };
-    r.onblocked = () => rej(new Error("Veritabanı başka sekmede açık. Diğer sekmeleri kapatın."));
-    r.onsuccess = (e) => {
-      attachHandlers(e.target.result);
-      res();
-    };
-    r.onerror = () => {
-      ready = null;
-      rej(r.error || new Error("Veritabanı açılamadı"));
-    };
-  });
-  return ready;
+  if (!res.ok) {
+    let msg = `Sunucu hatası (${res.status})`;
+    try {
+      const j = await res.json();
+      if (j && j.error) msg = j.error;
+    } catch (_) {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : undefined;
 }
 
-function requireDb() {
-  if (!idb) throw new Error("Veritabanı hazır değil");
-  return idb;
-}
-
-const req = (r) =>
-  new Promise((res, rej) => {
-    r.onsuccess = () => res(r.result);
-    r.onerror = () => rej(r.error || new Error("Veritabanı işlemi başarısız"));
-  });
-
-async function tx(names, mode, fn) {
-  await open();
-  const db = requireDb();
-  const stores = Array.isArray(names) ? names : [names];
-  return new Promise((res, rej) => {
-    const t = db.transaction(stores, mode);
-    t.onerror = () => rej(t.error || new Error("İşlem iptal edildi"));
-    t.onabort = () => rej(t.error || new Error("İşlem iptal edildi"));
-    Promise.resolve(fn(stores.map((n) => t.objectStore(n))))
-      .then(res)
-      .catch(rej);
-  });
+export async function open() {
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/health`);
+  } catch (e) {
+    online = false;
+    throw new Error("Sunucuya ulaşılamadı (Raspberry Pi çalışıyor mu?)");
+  }
+  if (!res.ok) {
+    online = false;
+    throw new Error("Veri sunucusu yanıt vermedi");
+  }
+  online = true;
 }
 
 export const Store = {
   open,
+  setUser,
   COLLECTIONS,
   get ready() {
-    return !!idb;
+    return online;
   },
-  all: (c) => tx(c, "readonly", ([os]) => req(os.getAll())),
+  get user() {
+    return currentUser;
+  },
+  all: (c) => api(`/col/${encodeURIComponent(c)}`),
   put: (c, obj) => {
     if (!obj || !obj.id) return Promise.reject(new Error("Geçersiz kayıt: id gerekli"));
-    return tx(c, "readwrite", ([os]) => req(os.put(obj)));
+    return api(`/col/${encodeURIComponent(c)}/${encodeURIComponent(obj.id)}`, {
+      method: "PUT",
+      body: JSON.stringify(obj)
+    });
   },
   del: (c, id) => {
     if (!id) return Promise.reject(new Error("Silinecek id gerekli"));
-    return tx(c, "readwrite", ([os]) => req(os.delete(id)));
+    return api(`/col/${encodeURIComponent(c)}/${encodeURIComponent(id)}`, { method: "DELETE" });
   },
-  clear: (c) => tx(c, "readwrite", ([os]) => req(os.clear())),
+  clear: (c) => api(`/col/${encodeURIComponent(c)}`, { method: "DELETE" }),
   getMeta: (k) =>
-    tx("meta", "readonly", ([os]) => req(os.get(k)).then((r) => (r ? r.value : undefined))),
-  setMeta: (k, value) => tx("meta", "readwrite", ([os]) => req(os.put({ key: k, value })))
+    api(`/meta/${encodeURIComponent(k)}`).then((r) => (r ? r.value : undefined)),
+  setMeta: (k, value) =>
+    api(`/meta/${encodeURIComponent(k)}`, { method: "PUT", body: JSON.stringify({ value }) })
 };
