@@ -65,7 +65,34 @@ Verify on your home network: `http://<pi-ip>:8080`
 
 ## Step 3 — Permanent URL: https://kpss.croupion.com
 
-You already ran `cloudflared tunnel login` for **croupion.com**. On the **Pi**:
+### 3a. Login on the Pi (required once)
+
+`cloudflared tunnel login` must finish **on the Raspberry Pi** so it creates `~/.cloudflared/cert.pem`. Logging in on your laptop is not enough unless you copy that file over.
+
+On the **Pi**:
+
+```bash
+cloudflared tunnel login
+```
+
+Copy the URL from the terminal → open on phone/laptop → authorize → select **croupion.com**.
+
+Verify:
+
+```bash
+ls ~/.cloudflared/cert.pem
+```
+
+**Alternative** — if you already logged in elsewhere:
+
+```bash
+# on dev machine
+scp ~/.cloudflared/cert.pem croupion@homerasp:~/.cloudflared/
+```
+
+### 3b. Finish tunnel setup
+
+On the **Pi**:
 
 ```bash
 cd ~/kpss_dashboard

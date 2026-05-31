@@ -11,6 +11,25 @@ set -euo pipefail
 TUNNEL_NAME="${1:-kpss-dashboard}"
 HOSTNAME="${2:-kpss.croupion.com}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ORIGIN_CERT="${HOME}/.cloudflared/cert.pem"
+
+require_origin_cert() {
+  if [[ -f "${ORIGIN_CERT}" ]]; then
+    return 0
+  fi
+  echo "ERROR: Missing Cloudflare origin certificate: ${ORIGIN_CERT}" >&2
+  echo "" >&2
+  echo "Login must complete ON THIS Pi (creates cert.pem):" >&2
+  echo "  cloudflared tunnel login" >&2
+  echo "  # Open the printed URL on phone/laptop → pick zone croupion.com" >&2
+  echo "" >&2
+  echo "If you already logged in on another computer, copy cert.pem here:" >&2
+  echo "  mkdir -p ~/.cloudflared" >&2
+  echo "  # from dev machine: scp ~/.cloudflared/cert.pem croupion@homerasp:~/.cloudflared/" >&2
+  exit 1
+}
+
+require_origin_cert
 
 get_tunnel_uuid() {
   cloudflared tunnel list 2>/dev/null | awk -v name="${TUNNEL_NAME}" '$0 ~ name { print $1; exit }'
