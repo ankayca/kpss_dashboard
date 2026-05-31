@@ -84,10 +84,31 @@ if ! curl -sfI http://127.0.0.1:8080 | head -1; then
   echo "  sudo nginx -t" >&2
   exit 1
 fi
-if ! curl -sf http://127.0.0.1:8080/api/health >/dev/null; then
-  echo "ERROR: storage API not reachable via nginx (/api/health)" >&2
-  echo "  sudo systemctl status kpss-api" >&2
-  echo "  sudo journalctl -u kpss-api -n 50" >&2
+
+# The Node service may need a moment to bind — poll for up to ~15s.
+wait_for() {
+  local url="$1" i
+  for i in $(seq 1 15); do
+    if curl -sf "$url" >/dev/null; then return 0; fi
+    sleep 1
+  done
+  return 1
+}
+
+if ! wait_for http://127.0.0.1:8090/api/health; then
+  echo "ERROR: storage API (kpss-api) is not listening on :8090" >&2
+  echo "----- systemctl status -----" >&2
+  sudo systemctl status kpss-api --no-pager -l || true
+  echo "----- last 40 log lines -----" >&2
+  sudo journalctl -u kpss-api -n 40 --no-pager || true
+  echo "----- node version -----" >&2
+  node -v || true
+  exit 1
+fi
+
+if ! wait_for http://127.0.0.1:8080/api/health; then
+  echo "ERROR: API runs on :8090 but nginx is not proxying /api/" >&2
+  echo "  sudo nginx -t && sudo systemctl reload nginx" >&2
   exit 1
 fi
 
