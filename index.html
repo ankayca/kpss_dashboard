@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KPSS Çalışma Paneli</title>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle" data-action="toggleSidebar" aria-label="Menü">≡</button>
+  <span class="ttl">KPSS Paneli</span>
+</div>
+<div class="backdrop" id="backdrop" data-action="toggleSidebar"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <span class="logo">K</span>
+    <span>KPSS Paneli<small>Çalışma Takip Sistemi</small></span>
+  </div>
+  <button class="nav-btn active" data-page="konu">Konu Testleri</button>
+  <button class="nav-btn" data-page="deneme">Genel Denemeler</button>
+  <button class="nav-btn" data-page="alan">Alan Denemeleri</button>
+  <button class="nav-btn" data-page="analiz">Analiz</button>
+  <button class="nav-btn" data-page="tekrar">Tekrar <span class="badge" id="revBadge">0</span></button>
+  <button class="nav-btn" data-page="ayarlar">Ayarlar</button>
+  <div class="sidebar-foot">
+    <button class="theme-btn" id="themeBtn" data-action="toggleTheme">Koyu tema</button>
+    <div class="build-tag" id="buildTag">Tema: Siyah / Kırmızı</div>
+    <div class="sidebar-note">Verilerin tarayıcı veritabanında (IndexedDB) saklanır. Ayarlar → Dışa Aktar ile yedek al.</div>
+  </div>
+</aside>
+
+<main class="main">
+
+  <!-- ============ KONU TESTLERİ ============ -->
+  <section class="page active" id="page-konu">
+    <div class="page-head">
+      <div>
+        <h1>Konu Testleri Takibi</h1>
+        <p>Kitap/fasiküllerindeki yanlışları ders ve konu bazlı takip et.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Kitap / Fasikül Ekle</h2>
+      <div class="sub">Kitabın hangi KPSS dersine ait olduğunu seç — konular o derse göre hazır gelir.</div>
+      <div class="form-row">
+        <div class="field" style="flex:2"><label>Kitap adı</label><input type="text" id="bookName" placeholder="İsem Tarih Fasikülleri" /></div>
+        <div class="field"><label>Ders</label><select id="bookLesson"></select></div>
+        <div class="field" style="display:flex; align-items:flex-end;"><button class="btn" data-action="addBook">Ekle</button></div>
+      </div>
+      <div id="bookList" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Yanlış Kaydı Gir</h2>
+      <div class="sub">Yanlış soru numaralarını gir.</div>
+      <div class="form-row">
+        <div class="field"><label>Tarih</label><input type="date" id="sessDate" /></div>
+        <div class="field"><label>Kitap</label><select id="sessBook"></select></div>
+        <div class="field" style="flex:2"><label>Konu</label><select id="sessTopic"></select></div>
+      </div>
+      <div class="form-row">
+        <div class="field" style="max-width:140px"><label>Toplam soru</label><input type="number" id="sessTotal" placeholder="20" min="1" /></div>
+        <div class="field" style="max-width:140px"><label>Süre (dk, ops.)</label><input type="number" id="sessDuration" placeholder="25" min="0" /></div>
+        <div class="field" style="flex:2"><label>Yanlış sorular</label><input type="text" id="sessWrong" placeholder="3, 7, 12" /></div>
+      </div>
+      <div class="sub" id="sessWrongHint" style="margin:-6px 0 12px;color:var(--accent-2)"></div>
+      <div class="btn-row">
+        <button type="button" class="btn" data-action="addSession">Kaydet</button>
+        <button type="button" class="btn ghost sm" data-action="saveSessionPerfect">Tam puan (yanlış yok)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Kayıtlı Yanlışlar</h2>
+      <div class="sub" id="sessSummary"></div>
+      <div style="overflow-x:auto;"><table id="sessTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ============ GENEL DENEMELER ============ -->
+  <section class="page" id="page-deneme">
+    <div class="page-head">
+      <div>
+        <h1>Genel Deneme Takibi</h1>
+        <p>Doğru/yanlış sayılarını gir, netler otomatik hesaplansın.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Yeni Deneme Ekle</h2>
+      <div class="sub">Her bölüm için doğru (D) ve yanlış (Y) sayısını gir. Net = D − Y×0,25.</div>
+      <div class="form-row">
+        <div class="field"><label>Tarih</label><input type="date" id="trialDate" /></div>
+        <div class="field"><label>Süre (dakika)</label><input type="number" id="trialDuration" placeholder="135" min="0" /></div>
+      </div>
+      <label>Net girişi</label>
+      <div id="netInputs"></div>
+      <div id="netTotal">Toplam: 0.00 net</div>
+
+      <div style="margin: 14px 0 4px; font-weight:700; font-size:14px;">Yanlış Konular</div>
+      <div class="sub">Yanlış yaptığın konuları işaretle; kaydederken her biri için sebep etiketlersin. İstersen önce hızlı etiketle:</div>
+      <div class="btn-row" style="margin-bottom:10px">
+        <button type="button" class="btn ghost sm" data-action="tagTrialTopicsEarly">İşaretli konuları etiketle</button>
+        <span class="sub" id="trialTagDraftHint" style="margin:0"></span>
+      </div>
+      <div id="topicChecks"></div>
+
+      <div class="field" style="margin-top:8px">
+        <label>Notlar</label>
+        <textarea id="trialNotes" placeholder="Süre yetmedi, paragrafta yavaş kaldım..."></textarea>
+      </div>
+      <button type="button" class="btn" data-action="addTrial">Kaydet → Konu sebeplerini etiketle</button>
+    </div>
+
+    <div class="card">
+      <h2>Kayıtlı Denemeler</h2>
+      <div class="sub" id="trialSummary"></div>
+      <div style="overflow-x:auto;"><table id="trialTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ============ ALAN DENEMELERİ ============ -->
+  <section class="page" id="page-alan">
+    <div class="page-head">
+      <div>
+        <h1>Alan Denemesi Takibi</h1>
+        <p>Tek bir dersin denemesini gir; net otomatik hesaplansın, yanlış konularını sebebiyle işaretle.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Yeni Alan Denemesi Ekle</h2>
+      <div class="sub">Dersi seç, doğru (D) ve yanlış (Y) sayısını gir. Net = D − Y×0,25.</div>
+      <div class="form-row">
+        <div class="field"><label>Tarih</label><input type="date" id="subjTrialDate" /></div>
+        <div class="field"><label>Ders</label><select id="subjTrialSection"></select></div>
+        <div class="field"><label>Süre (dakika)</label><input type="number" id="subjTrialDuration" placeholder="40" min="0" /></div>
+      </div>
+      <div class="form-row">
+        <div class="field" style="max-width:140px"><label>Doğru</label><input type="number" id="subjDogru" placeholder="D" min="0" /></div>
+        <div class="field" style="max-width:140px"><label>Yanlış</label><input type="number" id="subjYanlis" placeholder="Y" min="0" /></div>
+        <div class="field" style="display:flex; align-items:flex-end;"><div id="subjNetVal" class="net-val">0.00 net</div></div>
+      </div>
+
+      <div style="margin: 14px 0 4px; font-weight:700; font-size:14px;">Yanlış Konular</div>
+      <div class="sub">Yanlış yaptığın konuları işaretle; kaydederken her biri için sebep etiketlersin. İstersen önce hızlı etiketle:</div>
+      <div class="btn-row" style="margin-bottom:10px">
+        <button type="button" class="btn ghost sm" data-action="tagSubjTopicsEarly">İşaretli konuları etiketle</button>
+        <span class="sub" id="subjTagDraftHint" style="margin:0"></span>
+      </div>
+      <div id="subjTopicChecks"></div>
+
+      <div class="field" style="margin-top:8px">
+        <label>Notlar</label>
+        <textarea id="subjTrialNotes" placeholder="Geometride zorlandım, paragrafta yavaş kaldım..."></textarea>
+      </div>
+      <button type="button" class="btn" data-action="addSubjectTrial">Kaydet → Konu sebeplerini etiketle</button>
+    </div>
+
+    <div class="card">
+      <h2>Kayıtlı Alan Denemeleri</h2>
+      <div class="sub" id="subjTrialSummary"></div>
+      <div style="overflow-x:auto;"><table id="subjTrialTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ============ ANALİZ ============ -->
+  <section class="page" id="page-analiz">
+    <div class="page-head">
+      <div><h1>Analiz Paneli</h1><p>Gelişimini, hedefini ve zayıf konularını gör.</p></div>
+    </div>
+
+    <div class="summary-banner" id="dailySummary"></div>
+
+    <div class="card">
+      <h2>Filtre</h2>
+      <div class="sub">Aşağıdaki analizleri tarih aralığı ve derse göre süz. (Seri ve takvim her zaman tüm veriyi gösterir.)</div>
+      <div class="form-row">
+        <div class="field"><label>Tarih aralığı</label>
+          <select id="fltRange">
+            <option value="all">Tümü</option>
+            <option value="30">Son 30 gün</option>
+            <option value="90">Son 90 gün</option>
+            <option value="180">Son 180 gün</option>
+          </select>
+        </div>
+        <div class="field"><label>Ders</label><select id="fltLesson"></select></div>
+      </div>
+    </div>
+
+    <div class="grid cols-5" style="margin-bottom:20px">
+      <div class="stat countdown"><div class="val" id="cdDays">—</div><div class="lbl" id="cdLbl">Sınava kalan gün</div></div>
+      <div class="stat"><div class="val" id="statTrials">0</div><div class="lbl">Toplam deneme</div></div>
+      <div class="stat"><div class="val" id="statBestNet">—</div><div class="lbl">En yüksek toplam net</div></div>
+      <div class="stat"><div class="val" id="statStreak">0</div><div class="lbl">Günlük seri</div></div>
+      <div class="stat"><div class="val" id="statLongest">0</div><div class="lbl">En uzun seri</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Günlük Hedef</h2>
+      <div class="sub">Bugünkü çözülen soru ve çalışma süresi. Hedefleri Ayarlar'dan belirle.</div>
+      <div id="goalRings" class="goal-rings"></div>
+    </div>
+
+    <div class="card">
+      <h2>Hedef ve tempo</h2>
+      <div class="sub">Hedef netine ulaşmak için günlük gereken artış. Hedefi Ayarlar'dan belirle.</div>
+      <div id="paceBox"></div>
+      <div id="predictBox" class="predict-box"></div>
+    </div>
+
+    <div class="card">
+      <h2>Bu Hafta vs Geçen Hafta</h2>
+      <div class="sub">Pazartesi'den bugüne karşılaştırma. Momentumunu koru!</div>
+      <div id="weeklyCompare" class="week-grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Çalışma takvimi</h2>
+      <div class="sub">Yanlış kaydı, deneme veya tekrar yaptığın günler. Seriyi koru!</div>
+      <div id="streakInfo" class="sub"></div>
+      <div class="hm-wrap"><div id="heatmap"></div></div>
+      <div class="hm-legend">Az <span class="hm-cell"></span><span class="hm-cell l1"></span><span class="hm-cell l2"></span><span class="hm-cell l3"></span> Çok</div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>Toplam Net Gelişimi</h2>
+        <div class="sub">Denemeler boyunca toplam net</div>
+        <canvas id="chartTrend" height="220"></canvas>
+        <div class="empty" id="trendEmpty" style="display:none">Henüz deneme yok.</div>
+      </div>
+      <div class="card">
+        <h2>Bölüm Bazlı Ortalama Net</h2>
+        <div class="sub">Tüm denemelerin bölüm ortalaması</div>
+        <canvas id="chartSection" height="220"></canvas>
+        <div class="empty" id="sectionEmpty" style="display:none">Henüz deneme yok.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Bölüm Net Trendi</h2>
+      <div class="sub">Her bölümün denemeler boyunca net değişimi</div>
+      <canvas id="chartSectionTrend" height="200"></canvas>
+      <div class="empty" id="sectionTrendEmpty" style="display:none">Henüz deneme yok.</div>
+    </div>
+
+    <div class="card">
+      <h2>Haftalık Çalışma Süresi</h2>
+      <div class="sub">Denemeler ve konu testlerinde kaydettiğin süre (dakika), haftalık toplam</div>
+      <canvas id="chartStudyTime" height="200"></canvas>
+      <div class="empty" id="studyTimeEmpty" style="display:none">Henüz süre kaydı yok. Deneme/konu testi eklerken süre gir.</div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>Konu Testi Başarı Trendi</h2>
+        <div class="sub">Konu testlerinde haftalık doğruluk yüzdesi</div>
+        <canvas id="chartKonuTrend" height="200"></canvas>
+        <div class="empty" id="konuTrendEmpty" style="display:none">Henüz konu testi yok.</div>
+      </div>
+      <div class="card">
+        <h2>Yanlış Sebep Trendi</h2>
+        <div class="sub">Sebeplerin haftalara göre değişimi — "Dikkatsizlik azalıyor mu?"</div>
+        <canvas id="chartReasonTrend" height="200"></canvas>
+        <div class="empty" id="reasonTrendEmpty" style="display:none">Henüz sebep etiketi yok.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Konu Hâkimiyeti</h2>
+      <div class="sub">Konu testi doğruluğun + denemelerde işaretlediğin yanlışlardan hesaplanan hâkimiyet skoru (en zayıf üstte). "Tekrara ekle" ile tekrar kuyruğuna al.</div>
+      <div id="mastery"><div class="empty">Henüz yeterli veri yok.</div></div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>Denemelerde İşaretlenen Yanlış Konular</h2>
+        <div class="sub">Genel denemelerde işaretlediğin konuların sıklığı</div>
+        <div id="trialTopicFreq"><div class="empty">Henüz veri yok.</div></div>
+      </div>
+      <div class="card">
+        <h2>Konu Testi Yanlış Yoğunluğu</h2>
+        <div class="sub">Konu testlerinde konu başına biriken yanlış sayısı</div>
+        <div id="konuTopicFreq"><div class="empty">Henüz veri yok.</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Alan Denemeleri — Ders Bazlı Ortalama Net</h2>
+      <div class="sub">Tek ders denemelerinde her dersin ortalama neti ve deneme sayısı</div>
+      <div id="subjTrialFreq"><div class="empty">Henüz alan denemesi yok.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Yanlış Sebepleri</h2>
+      <div class="sub">Soru ve konu başına etiketlediğin sebeplerin dağılımı</div>
+      <div id="reasonFreq"><div class="empty">Henüz sebep etiketi yok.</div></div>
+    </div>
+
+    <div class="card" style="border-color: rgba(var(--rose-rgb),.4)">
+      <h2 style="color:var(--red)">Kesişen zayıf konular</h2>
+      <div class="sub">Hem konu testlerinde hem genel denemelerde sorun yaşadığın konular — öncelik ver!</div>
+      <div id="intersection"><div class="empty">Henüz kesişim tespit edilmedi.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Başarımlar</h2>
+      <div class="sub">Çalıştıkça açılan rozetler. Seriyi ve soru sayını artırarak hepsini topla!</div>
+      <div id="achievements" class="badge-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ TEKRAR ============ -->
+  <section class="page" id="page-tekrar">
+    <div class="page-head">
+      <div><h1>Tekrar Kuyruğu</h1><p>Aralıklı tekrar: zayıf konuları planlı şekilde tekrar et. (İstediğinde ekle, zorunlu değil.)</p></div>
+    </div>
+
+    <div class="card">
+      <h2>Tekrara Konu Ekle</h2>
+      <div class="sub">Tekrar etmek istediğin dersi ve konuyu seç. Aralıklar: 1, 3, 7, 14, 30 gün.</div>
+      <div class="form-row">
+        <div class="field"><label>Ders</label><select id="revLesson"></select></div>
+        <div class="field" style="flex:2"><label>Konu</label><select id="revTopic"></select></div>
+        <div class="field" style="display:flex; align-items:flex-end;"><button class="btn" data-action="addReviewManual">Ekle</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Bugün / Geçmiş Tekrarlar</h2>
+      <div class="sub">Zamanı gelen tekrarlar. "Tekrar ettim" deyince bir sonraki tarihe ötelenir.</div>
+      <div id="revDue"><div class="empty">Bekleyen tekrar yok.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Yaklaşan Tekrarlar</h2>
+      <div id="revUpcoming"><div class="empty">Planlanmış tekrar yok.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Tamamlananlar</h2>
+      <div class="sub">Tüm aralıkları bitirdiğin (hâkim olduğun) konular</div>
+      <div id="revDone"><div class="empty">Henüz tamamlanan konu yok.</div></div>
+    </div>
+  </section>
+
+  <!-- ============ AYARLAR ============ -->
+  <section class="page" id="page-ayarlar">
+    <div class="page-head">
+      <div><h1>Ayarlar</h1><p>Sınav tarihi, hedef ve veri yönetimi.</p></div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>Sınav Tarihi</h2>
+        <div class="sub">Geri sayım ve tempo hesabı için sınav tarihini gir.</div>
+        <div class="form-row">
+          <div class="field" style="flex:2"><label>Sınav tarihi</label><input type="date" id="examDate" /></div>
+          <div class="field" style="display:flex; align-items:flex-end;"><button class="btn" data-action="saveExamDate">Kaydet</button></div>
+        </div>
+        <div id="examInfo" class="sub"></div>
+      </div>
+
+      <div class="card">
+        <h2>Hedef Net</h2>
+        <div class="sub">Ulaşmak istediğin toplam net (5 bölüm toplamı, örn. 90).</div>
+        <div class="form-row">
+          <div class="field" style="flex:2"><label>Hedef toplam net</label><input type="number" id="targetNet" placeholder="90" min="0" step="0.25" /></div>
+          <div class="field" style="display:flex; align-items:flex-end;"><button class="btn" data-action="saveTarget">Kaydet</button></div>
+        </div>
+        <div id="targetInfo" class="sub"></div>
+      </div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>Günlük Hedef</h2>
+        <div class="sub">Her gün için soru ve/veya süre hedefi belirle. Analiz'de halka göstergesi olarak görünür.</div>
+        <div class="form-row">
+          <div class="field"><label>Günlük soru hedefi</label><input type="number" id="dailyQuestionGoal" placeholder="100" min="0" /></div>
+          <div class="field"><label>Günlük süre (dk)</label><input type="number" id="dailyMinuteGoal" placeholder="120" min="0" /></div>
+          <div class="field" style="display:flex; align-items:flex-end;"><button class="btn" data-action="saveDailyGoals">Kaydet</button></div>
+        </div>
+        <div id="goalsInfo" class="sub"></div>
+      </div>
+
+      <div class="card">
+        <h2>Tekrar Hatırlatıcısı</h2>
+        <div class="sub">Bugün vadesi gelen tekrarlar için tarayıcı bildirimi al (uygulamayı açtığında).</div>
+        <div class="btn-row">
+          <button class="btn ghost" id="notifyBtn" data-action="toggleNotifyReviews">Hatırlatıcı: Kapalı</button>
+        </div>
+        <div id="notifyInfo" class="sub" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Görünüm</h2>
+      <div class="sub">Tema tercihini seç.</div>
+      <div class="btn-row">
+        <button class="btn ghost" data-action="setTheme" data-theme="dark">Koyu</button>
+        <button class="btn ghost" data-action="setTheme" data-theme="light">Açık</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Veri Yönetimi</h2>
+      <div class="sub">Veriler tarayıcı veritabanında (IndexedDB) tutulur — ileride buluta taşımaya hazır mimari. JSON ile yedekle / geri yükle.</div>
+      <div class="btn-row" style="margin-bottom:14px">
+        <button class="btn ghost" data-action="exportData">Dışa aktar (JSON)</button>
+        <button class="btn ghost" data-action="importTrigger">İçe aktar (JSON)</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" />
+      </div>
+      <div class="sub" id="dataStats"></div>
+      <button class="btn danger sm" data-action="clearAll">Tüm Verileri Sil</button>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<div class="tag-overlay" id="tagOverlay" aria-hidden="true">
+  <div class="tag-panel" role="dialog" aria-labelledby="tagTarget">
+    <div class="tag-head">
+      <span class="tag-mode">Hızlı etiket</span>
+      <span class="tag-progress" id="tagProgress">1 / 1</span>
+      <button type="button" class="tag-close" data-action="tagCancel" title="İptal">✕</button>
+    </div>
+    <div class="tag-dots" id="tagDots"></div>
+    <div class="tag-target-wrap"><div class="tag-target" id="tagTarget"></div></div>
+    <p class="tag-hint">Sebebini seç — <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> · atla: <kbd>0</kbd></p>
+    <div class="tag-reasons" id="tagReasons"></div>
+    <button type="button" class="tag-skip btn ghost sm" data-action="tagSkip">Atla →</button>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

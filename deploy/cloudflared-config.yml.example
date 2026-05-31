@@ -1,0 +1,23 @@
+# Cloudflare Tunnel config — copy to /etc/cloudflared/config.yml
+#
+# Setup (one time):
+#   curl -L https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg
+#   echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflared.list
+#   sudo apt update && sudo apt install -y cloudflared
+#
+#   cloudflared tunnel login          # opens browser — pick your Cloudflare zone
+#   cloudflared tunnel create kpss-dashboard
+#   cloudflared tunnel route dns kpss-dashboard kpss.croupion.com
+#
+# Or run: ./deploy/finish-tunnel.sh   (automates everything below)
+#
+# Replace TUNNEL_UUID below with the UUID from `cloudflared tunnel list`.
+# Credentials file is created at ~/.cloudflared/<UUID>.json — copy to /etc/cloudflared/
+
+tunnel: TUNNEL_UUID
+credentials-file: /etc/cloudflared/TUNNEL_UUID.json
+
+ingress:
+  - hostname: kpss.croupion.com
+    service: http://127.0.0.1:8080
+  - service: http_status:404

@@ -1,0 +1,21 @@
+{
+  "name": "kpss-dashboard",
+  "version": "2.0.0",
+  "description": "KPSS Çalışma Paneli — offline-first study tracker (vanilla JS + IndexedDB, Vite)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.1"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.0.0",
+    "jsdom": "^24.1.0",
+    "vite": "^5.4.0",
+    "vitest": "^2.1.0"
+  }
+}
