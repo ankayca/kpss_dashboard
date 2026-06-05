@@ -26,8 +26,12 @@ import {
 } from "./features/trials.js";
 import {
   onPhotoFilesPicked,
+  openPhotoCamera,
+  setupPhotoDropZone,
+  setupPhotoBooklets,
+  resetStagedPhotos,
+  updatePhotoConfirmHint,
   runPhotoClassify,
-  applyPhotoResults,
   clearPhotoResults
 } from "./features/photoImport.js";
 import {
@@ -77,8 +81,8 @@ const ACTIONS = {
   saveSessionPerfect: () => saveSessionPerfect(),
   tagTrialTopicsEarly: () => tagTrialTopicsEarly(),
   addTrial: () => addTrial(),
+  photoCamera: () => openPhotoCamera(),
   runPhotoClassify: () => runPhotoClassify(),
-  applyPhotoResults: () => applyPhotoResults(),
   clearPhotoResults: () => clearPhotoResults(),
   tagSubjTopicsEarly: () => tagSubjTopicsEarly(),
   addSubjectTrial: () => addSubjectTrial(),
@@ -130,6 +134,16 @@ export function setupEventListeners() {
   on("sessBook", "change", fillSessTopics);
   on("sessWrong", "input", updateSessWrongHint);
   on("photoFile", "change", onPhotoFilesPicked);
+  on("photoCam", "change", onPhotoFilesPicked);
+  // Switching booklet invalidates the staged photos + wrong numbers (each
+  // booklet restarts numbering at 1), but the already-confirmed matches from
+  // other booklets stay in the list.
+  on("photoBooklet", "change", () => {
+    resetStagedPhotos();
+    if ($("photoWrong")) $("photoWrong").value = "";
+  });
+  setupPhotoBooklets();
+  setupPhotoDropZone();
   on("revLesson", "change", fillRevTopics);
   on("importFile", "change", (e) => importData(e));
 
@@ -139,7 +153,10 @@ export function setupEventListeners() {
   const topicChecks = $("topicChecks");
   if (topicChecks)
     topicChecks.addEventListener("change", (e) => {
-      if (e.target.matches('input[type="checkbox"]')) syncTopicCheck(e.target);
+      if (e.target.matches('input[type="checkbox"]')) {
+        syncTopicCheck(e.target);
+        updatePhotoConfirmHint();
+      }
     });
 
   // Subject-trial (alan denemeleri) inputs.

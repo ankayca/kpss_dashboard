@@ -6,12 +6,13 @@
    (Gemini, server-side) maps each wrong question to a
    {section, topic} from the active profile's taxonomy.
 
-   The result is shown for confirmation, then it just *ticks*
-   the existing "Yanlış Konular" checkboxes (#topicChecks) so
-   the normal trial-save flow (TagGame → wrongTopicTags) runs
-   unchanged. No new storage shape, no new save path.
+   Each AI run appends its {questionNo, section, topic} matches to the
+   confirmation list rendered in #topicChecks. The user reviews them
+   (keep / uncheck), accumulating across booklets, and the normal
+   trial-save flow (TagGame → wrongTopicTags) reads the checked rows.
+   There is no separate manual topic grid anymore.
    ============================================================ */
-import { SECTIONS, SECTION_KEYS } from "../config.js";
+import { SECTIONS, SECTION_KEYS, BOOKLETS } from "../config.js";
 import { $, esc, escAttr, toast, parseWrongNums } from "../utils.js";
 
 // Downscale target — vision cost scales with image size, so keep it small.
@@ -20,8 +21,8 @@ const JPEG_QUALITY = 0.6;
 const MAX_IMAGES = 6;
 const LOW_CONFIDENCE = 0.5;
 
-let selectedFiles = []; // File[]
-let lastResults = []; // sanitized classification rows from the server
+let selectedFiles = []; // File[] staged for the current classify run
+let confirmed = []; // accumulated AI matches awaiting confirmation (across booklets)
 
 /* ---------------- image compression (client-side) ---------------- */
 
@@ -56,10 +57,33 @@ async function compressToBase64(file) {
   return { mime: "image/jpeg", data: dataUrl.split(",")[1] || "" };
 }
 
+/* ---------------- booklet scoping ---------------- */
+
+/** Section keys for the currently selected booklet (falls back to all). */
+function activeBookletSectionKeys() {
+  const sel = $("photoBooklet");
+  const chosen = sel && sel.value;
+  const booklet = BOOKLETS.find((b) => b.key === chosen) || BOOKLETS[0];
+  const keys = (booklet && booklet.sections) || SECTION_KEYS;
+  // Guard against config drift: keep only keys that still exist.
+  return keys.filter((k) => SECTIONS[k]);
+}
+
+/** Populate the booklet picker; hide it entirely when there's only one. */
+export function setupPhotoBooklets() {
+  const sel = $("photoBooklet");
+  const field = $("photoBookletField");
+  if (!sel) return;
+  sel.innerHTML = BOOKLETS.map(
+    (b) => `<option value="${escAttr(b.key)}">${esc(b.label)}</option>`
+  ).join("");
+  if (field) field.classList.toggle("hidden", BOOKLETS.length < 2);
+}
+
 /* ---------------- taxonomy payload ---------------- */
 
 function sectionsPayload() {
-  return SECTION_KEYS.map((k) => ({
+  return activeBookletSectionKeys().map((k) => ({
     key: k,
     label: SECTIONS[k].label,
     topics: SECTIONS[k].topics
@@ -68,16 +92,81 @@ function sectionsPayload() {
 
 /* ---------------- file selection + thumbnails ---------------- */
 
-export function onPhotoFilesPicked(e) {
-  const files = Array.from((e.target && e.target.files) || []).filter((f) =>
-    /^image\//.test(f.type)
-  );
-  if (!files.length) return;
-  selectedFiles = files.slice(0, MAX_IMAGES);
+/** Merge newly chosen/dropped files into the selection (dedup, cap to MAX_IMAGES). */
+function addFiles(fileList) {
+  const incoming = Array.from(fileList || []).filter((f) => /^image\//.test(f.type));
+  if (!incoming.length) {
+    toast("Sadece görsel dosyaları eklenebilir.", true);
+    return;
+  }
+  const seen = new Set(selectedFiles.map((f) => `${f.name}:${f.size}`));
+  const merged = selectedFiles.slice();
+  for (const f of incoming) {
+    const key = `${f.name}:${f.size}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(f);
+  }
+  const overflow = merged.length > MAX_IMAGES;
+  selectedFiles = merged.slice(0, MAX_IMAGES);
   renderPhotoThumbs();
-  if (files.length > MAX_IMAGES) {
+  if (overflow) {
     toast(`En fazla ${MAX_IMAGES} sayfa işlenir; ilk ${MAX_IMAGES} alındı.`, true);
   }
+}
+
+/** <input type="file"> change handler (gallery picker and camera both route here). */
+export function onPhotoFilesPicked(e) {
+  addFiles(e.target && e.target.files);
+  // Reset so picking the same file again still fires a change event.
+  if (e.target) e.target.value = "";
+}
+
+/** Open the camera-capture input (phones show the rear camera). */
+export function openPhotoCamera() {
+  const cam = $("photoCam");
+  if (cam) cam.click();
+}
+
+/** Wire the drop zone: click opens the file picker, drag-and-drop adds images. */
+export function setupPhotoDropZone() {
+  const zone = $("photoDrop");
+  const fileInput = $("photoFile");
+  if (!zone || !fileInput) return;
+
+  zone.addEventListener("click", (e) => {
+    // Let the inner camera button handle its own click.
+    if (e.target.closest("button")) return;
+    fileInput.click();
+  });
+  zone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      fileInput.click();
+    }
+  });
+
+  const stop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  ["dragenter", "dragover"].forEach((ev) =>
+    zone.addEventListener(ev, (e) => {
+      stop(e);
+      zone.classList.add("dragover");
+    })
+  );
+  ["dragleave", "dragend"].forEach((ev) =>
+    zone.addEventListener(ev, (e) => {
+      stop(e);
+      zone.classList.remove("dragover");
+    })
+  );
+  zone.addEventListener("drop", (e) => {
+    stop(e);
+    zone.classList.remove("dragover");
+    if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+  });
 }
 
 function renderPhotoThumbs() {
@@ -134,94 +223,119 @@ export async function runPhotoClassify() {
     return toast(e && e.message ? e.message : "AI çağrısı başarısız.", true);
   }
 
-  lastResults = Array.isArray(payload.results) ? payload.results : [];
-  setBusy(false, lastResults.length ? "" : "Sonuç bulunamadı.");
-  renderPhotoResults();
-  if (!lastResults.length) {
-    toast("Konu bulunamadı — soruları el ile işaretleyebilirsin.", true);
+  const results = Array.isArray(payload.results) ? payload.results : [];
+  const added = mergeConfirmed(results);
+  setBusy(false, results.length ? "" : "Sonuç bulunamadı.");
+  renderConfirmList();
+  resetStagedPhotos(); // ready for the next booklet's pages
+  const checksEl = $("topicChecks");
+  if (checksEl && added) checksEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  if (!results.length) {
+    toast("Konu bulunamadı — fotoğrafı netleştirip tekrar dene.", true);
+  } else if (!added) {
+    toast("Bu eşleşmeler zaten onay listesinde.", false);
   } else {
-    toast(`${lastResults.length} konu önerisi hazır — kontrol edip işaretle.`);
+    toast(`${added} yeni eşleşme onaya eklendi — kontrol et.`);
   }
 }
 
-/* ---------------- review UI ---------------- */
+/* ---------------- confirmation list (#topicChecks) ---------------- */
 
-function renderPhotoResults() {
-  const box = $("photoResults");
+function selectedBookletLabel() {
+  const sel = $("photoBooklet");
+  const b = BOOKLETS.find((x) => x.key === (sel && sel.value));
+  return BOOKLETS.length > 1 && b ? b.label : "";
+}
+
+/** Append new AI rows to the accumulated confirm list (dedupe identical rows). */
+function mergeConfirmed(results) {
+  const bookletLabel = selectedBookletLabel();
+  let added = 0;
+  for (const r of results) {
+    if (!r || !r.section || !r.topic) continue;
+    const qno = Number.isFinite(r.questionNo) ? r.questionNo : null;
+    const key = `${r.section}|${r.topic}|${qno == null ? "" : qno}`;
+    if (confirmed.some((c) => c.key === key)) continue;
+    const confidence = typeof r.confidence === "number" ? r.confidence : 0.5;
+    confirmed.push({
+      key,
+      qno,
+      bookletLabel,
+      section: r.section,
+      sectionLabel: r.sectionLabel || r.section,
+      topic: r.topic,
+      confidence,
+      checked: confidence >= LOW_CONFIDENCE
+    });
+    added++;
+  }
+  confirmed.sort((a, b) => {
+    if (a.bookletLabel !== b.bookletLabel) return a.bookletLabel < b.bookletLabel ? -1 : 1;
+    return (a.qno || 0) - (b.qno || 0);
+  });
+  return added;
+}
+
+/** Render the accumulated matches into #topicChecks as confirmable rows. */
+export function renderConfirmList() {
+  const box = $("topicChecks");
   if (!box) return;
-  if (!lastResults.length) {
-    box.innerHTML = "";
+  if (!confirmed.length) {
+    box.innerHTML = `<div class="sub tc-empty">Henüz eşleşme yok — yukarıdan fotoğraf yükleyip "Konuları bul (AI)" de.</div>`;
+    updatePhotoConfirmHint();
     return;
   }
-  const rows = lastResults
-    .map((r, i) => {
-      const low = r.confidence < LOW_CONFIDENCE;
-      const pct = Math.round((r.confidence || 0) * 100);
-      const qLabel = r.questionNo ? `Soru ${esc(String(r.questionNo))}` : "Soru ?";
-      return `<label class="photo-res-row${low ? " low" : ""}">
-        <input type="checkbox" data-photo-res="${i}" ${low ? "" : "checked"} />
-        <span class="photo-res-q">${qLabel}</span>
-        <span class="photo-res-arrow">→</span>
-        <span class="pill">${esc(r.sectionLabel)}</span>
-        <span class="pill topic">${esc(r.topic)}</span>
-        <span class="photo-res-conf" title="Güven">%${pct}${low ? " · düşük" : ""}</span>
+  box.innerHTML = confirmed
+    .map((c) => {
+      const low = c.confidence < LOW_CONFIDENCE;
+      const pct = Math.round((c.confidence || 0) * 100);
+      const q = c.qno ? `Soru ${esc(String(c.qno))}` : "Soru ?";
+      const bk = c.bookletLabel ? `<span class="tc-booklet">${esc(c.bookletLabel)}</span>` : "";
+      return `<label class="chk tc-row${c.checked ? " checked" : ""}${low ? " low" : ""}">
+        <input type="checkbox" data-section="${escAttr(c.section)}" value="${escAttr(c.topic)}" ${c.checked ? "checked" : ""} />
+        <span class="tc-q">${q}</span>
+        ${bk}
+        <span class="tc-sec">${esc(c.sectionLabel)}</span>
+        <span class="tc-arrow">→</span>
+        <span class="tc-topic">${esc(c.topic)}</span>
+        <span class="tc-conf" title="Güven">%${pct}${low ? " · düşük" : ""}</span>
       </label>`;
     })
     .join("");
-  box.innerHTML =
-    `<div class="sub">AI önerileri — işaretliler aşağıdaki "Yanlış Konular" listesine eklenecek. Düşük güvenli olanları kontrol et.</div>` +
-    rows +
-    `<div class="btn-row" style="margin-top:10px">
-      <button type="button" class="btn sm" data-action="applyPhotoResults">Seçili konuları işaretle</button>
-      <button type="button" class="btn ghost sm" data-action="clearPhotoResults">Temizle</button>
-    </div>`;
+  updatePhotoConfirmHint();
 }
 
-/** Tick the matching checkboxes in #topicChecks for the accepted suggestions. */
-export function applyPhotoResults() {
-  const box = $("photoResults");
-  if (!box) return;
-  const accepted = new Set();
-  box.querySelectorAll("input[data-photo-res]:checked").forEach((cb) => {
-    accepted.add(parseInt(cb.dataset.photoRes, 10));
-  });
-  if (!accepted.size) return toast("İşaretlenecek konu seç.", true);
-
-  let ticked = 0;
-  const missing = [];
-  accepted.forEach((i) => {
-    const r = lastResults[i];
-    if (!r) return;
-    const sel = `#topicChecks input[data-section="${CSS.escape(r.section)}"][value="${CSS.escape(r.topic)}"]`;
-    const cb = document.querySelector(sel);
-    if (cb) {
-      if (!cb.checked) {
-        cb.checked = true;
-        const label = cb.closest(".chk");
-        if (label) label.classList.add("checked");
-        ticked++;
-      }
-    } else {
-      missing.push(`${r.sectionLabel} · ${r.topic}`);
-    }
-  });
-
-  const checksEl = $("topicChecks");
-  if (checksEl) checksEl.scrollIntoView({ behavior: "smooth", block: "center" });
-  if (ticked) toast(`${ticked} konu işaretlendi — sebepleri etiketleyip kaydet.`);
-  else toast("Konular zaten işaretliydi.", false);
-  if (missing.length) {
-    toast(`Bu profilde bulunmayan konu(lar): ${missing.join(", ")}`, true);
+/** Sync internal checked state from the DOM and refresh the count hint. */
+export function updatePhotoConfirmHint() {
+  const box = $("topicChecks");
+  if (box) {
+    const cbs = box.querySelectorAll("input[type=checkbox]");
+    cbs.forEach((cb, i) => {
+      if (confirmed[i]) confirmed[i].checked = cb.checked;
+    });
+  }
+  const hint = $("photoConfirmHint");
+  if (hint) {
+    const n = confirmed.filter((c) => c.checked).length;
+    hint.textContent = confirmed.length ? `${n}/${confirmed.length} konu işaretli` : "";
   }
 }
 
-export function clearPhotoResults() {
-  lastResults = [];
+/** Clear only the staged photos/inputs for the current run (keeps confirmed list). */
+export function resetStagedPhotos() {
   selectedFiles = [];
   const f = $("photoFile");
   if (f) f.value = "";
+  const cam = $("photoCam");
+  if (cam) cam.value = "";
   renderPhotoThumbs();
-  renderPhotoResults();
   const status = $("photoStatus");
   if (status) status.textContent = "";
+}
+
+/** Full reset: drop the confirmation list and staged photos. */
+export function clearPhotoResults() {
+  confirmed = [];
+  resetStagedPhotos();
+  renderConfirmList();
 }

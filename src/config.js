@@ -35,9 +35,25 @@ const AGS_OKUL_ONCESI_SECTIONS = {
   alanEgitimi:     { label: "Okul Öncesi · Alan Eğitimi", topics: ["Erken Çocuklukta Fen Eğitimi", "Erken Çocuklukta Matematik Eğitimi", "Erken Çocuklukta Güzel Sanatlar Eğitimi", "Erken Çocuklukta Müzik Eğitimi", "Erken Çocuklukta Oyun", "Erken Çocuklukta Drama", "Öğrenme Yaklaşımları", "Okula Uyum ve Erken Okuryazarlık"] }
 };
 
+/* Booklets = separate question-numbering spaces in one sitting. Each booklet
+   restarts numbering at 1, so a wrong number like "7" is ambiguous across
+   booklets. Photo import is scoped to one booklet at a time to disambiguate
+   (and to send only that booklet's taxonomy to the AI). */
+const KPSS_LISANS_BOOKLETS = [
+  { key: "gy", label: "Genel Yetenek (GY)", sections: ["turkce", "matematik"] },
+  { key: "gk", label: "Genel Kültür (GK)", sections: ["tarih", "cografya", "vatandaslik"] }
+];
+
+// AGS sitting: AGS booklet (80 soru) and ÖABT alan booklet (50 soru) are
+// numbered independently, so they form two booklets.
+const AGS_OKUL_ONCESI_BOOKLETS = [
+  { key: "ags", label: "AGS Oturumu (Genel)", sections: ["sozel", "sayisal", "tarih", "cografya", "egitimBilimleri", "mevzuat"] },
+  { key: "oabt", label: "ÖABT · Alan Oturumu", sections: ["alanBilgisi", "alanEgitimi"] }
+];
+
 export const PROFILES = {
-  kpssLisans:    { id: "kpssLisans",    examName: "KPSS Lisans (GY-GK)",              sections: KPSS_LISANS_SECTIONS },
-  agsOkulOncesi: { id: "agsOkulOncesi", examName: "AGS · Okul Öncesi Öğretmenliği",   sections: AGS_OKUL_ONCESI_SECTIONS }
+  kpssLisans:    { id: "kpssLisans",    examName: "KPSS Lisans (GY-GK)",              sections: KPSS_LISANS_SECTIONS,     booklets: KPSS_LISANS_BOOKLETS },
+  agsOkulOncesi: { id: "agsOkulOncesi", examName: "AGS · Okul Öncesi Öğretmenliği",   sections: AGS_OKUL_ONCESI_SECTIONS, booklets: AGS_OKUL_ONCESI_BOOKLETS }
 };
 
 export const DEFAULT_PROFILE = "kpssLisans";
@@ -55,12 +71,28 @@ export const PROFILE_OPTIONS = Object.values(PROFILES).map((p) => ({
 export let ACTIVE_PROFILE = PROFILES[DEFAULT_PROFILE];
 export let SECTIONS = ACTIVE_PROFILE.sections;
 export let SECTION_KEYS = Object.keys(SECTIONS);
+export let BOOKLETS = bookletsFor(ACTIVE_PROFILE);
+
+/** Booklets for a profile, falling back to a single implicit booklet that
+    spans every section (so profiles without a split still work). */
+function bookletsFor(profile) {
+  const sectionKeys = Object.keys(profile.sections);
+  if (Array.isArray(profile.booklets) && profile.booklets.length) {
+    return profile.booklets.map((b) => ({
+      key: b.key,
+      label: b.label,
+      sections: b.sections.filter((k) => sectionKeys.includes(k))
+    }));
+  }
+  return [{ key: "all", label: "Tüm sorular", sections: sectionKeys }];
+}
 
 /** Point the app's section config at a given user's profile. */
 export function setActiveProfile(profileId) {
   ACTIVE_PROFILE = PROFILES[profileId] || PROFILES[DEFAULT_PROFILE];
   SECTIONS = ACTIVE_PROFILE.sections;
   SECTION_KEYS = Object.keys(SECTIONS);
+  BOOKLETS = bookletsFor(ACTIVE_PROFILE);
   return ACTIVE_PROFILE;
 }
 

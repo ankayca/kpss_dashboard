@@ -16,6 +16,7 @@ import {
 import { TagGame } from "../tagGame.js";
 import { isActive } from "../nav.js";
 import { renderAnalytics } from "./analytics.js";
+import { renderConfirmList, clearPhotoResults } from "./photoImport.js";
 
 // Draft of topic→reason tags created before the trial is saved.
 let trialTopicTagsDraft = null;
@@ -33,15 +34,9 @@ export function buildTrialForm() {
       <div class="net-val" id="netv_${k}">0.00 net</div>
     </div>`
   ).join("");
-  $("topicChecks").innerHTML = SECTION_KEYS.map((k) => {
-    const chks = SECTIONS[k].topics
-      .map(
-        (tp) =>
-          `<label class="chk"><input type="checkbox" data-section="${k}" value="${escAttr(tp)}"> ${esc(tp)}</label>`
-      )
-      .join("");
-    return `<div class="topic-group"><h4>${esc(SECTIONS[k].label)}</h4><div class="chk-grid">${chks}</div></div>`;
-  }).join("");
+  // Wrong topics are no longer marked by hand; the AI confirmation list
+  // (rendered into #topicChecks by photoImport) is the single source.
+  renderConfirmList();
   recalcNet();
 }
 
@@ -64,10 +59,16 @@ export function syncTopicCheck(checkbox) {
 }
 
 function getCheckedTrialTopics() {
+  // Multiple wrong questions can map to the same topic; collapse to one
+  // entry per section|topic (wrongTopicTags stores one reason per topic).
+  const seen = new Set();
   const list = [];
-  document.querySelectorAll("#topicChecks input:checked").forEach((cb) =>
-    list.push({ section: cb.dataset.section, topic: cb.value, id: cb.dataset.section + "|" + cb.value })
-  );
+  document.querySelectorAll("#topicChecks input:checked").forEach((cb) => {
+    const id = cb.dataset.section + "|" + cb.value;
+    if (seen.has(id)) return;
+    seen.add(id);
+    list.push({ section: cb.dataset.section, topic: cb.value, id });
+  });
   return list;
 }
 
@@ -114,10 +115,7 @@ async function finishTrialSave(payload) {
     $("dogru_" + k).value = "";
     $("yanlis_" + k).value = "";
   });
-  document.querySelectorAll("#topicChecks input:checked").forEach((cb) => {
-    cb.checked = false;
-    cb.closest(".chk").classList.remove("checked");
-  });
+  clearPhotoResults();
   trialTopicTagsDraft = null;
   updateTrialTagDraftHint();
   recalcNet();
