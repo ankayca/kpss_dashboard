@@ -17,30 +17,13 @@ import {
   updateSessWrongHint,
   fillSessTopics
 } from "./features/books.js";
-import {
-  addTrial,
-  deleteTrial,
-  tagTrialTopicsEarly,
-  recalcNet,
-  syncTopicCheck
-} from "./features/trials.js";
-import {
-  onPhotoFilesPicked,
-  openPhotoCamera,
-  setupPhotoDropZone,
-  setupPhotoBooklets,
-  resetStagedPhotos,
-  updatePhotoConfirmHint,
-  runPhotoClassify,
-  clearPhotoResults
-} from "./features/photoImport.js";
+import { addTrial, deleteTrial, tagTrialTopicsEarly, recalcNet } from "./features/trials.js";
+import { generalPhotoImporter, subjectPhotoImporter } from "./features/photoImport.js";
 import {
   addSubjectTrial,
   deleteSubjectTrial,
-  tagSubjTopicsEarly,
   recalcSubjectNet,
-  syncSubjTopicCheck,
-  buildSubjectTopicChecks
+  onSubjSectionChange
 } from "./features/subjectTrials.js";
 import {
   addReviewManual,
@@ -81,10 +64,12 @@ const ACTIONS = {
   saveSessionPerfect: () => saveSessionPerfect(),
   tagTrialTopicsEarly: () => tagTrialTopicsEarly(),
   addTrial: () => addTrial(),
-  photoCamera: () => openPhotoCamera(),
-  runPhotoClassify: () => runPhotoClassify(),
-  clearPhotoResults: () => clearPhotoResults(),
-  tagSubjTopicsEarly: () => tagSubjTopicsEarly(),
+  photoCamera: () => generalPhotoImporter.openCamera(),
+  runPhotoClassify: () => generalPhotoImporter.runClassify(),
+  clearPhotoResults: () => generalPhotoImporter.clearResults(),
+  subjPhotoCamera: () => subjectPhotoImporter.openCamera(),
+  runSubjPhotoClassify: () => subjectPhotoImporter.runClassify(),
+  clearSubjPhotoResults: () => subjectPhotoImporter.clearResults(),
   addSubjectTrial: () => addSubjectTrial(),
   addReviewManual: () => addReviewManual(),
   saveExamDate: () => saveExamDate(),
@@ -133,41 +118,23 @@ export function setupEventListeners() {
   };
   on("sessBook", "change", fillSessTopics);
   on("sessWrong", "input", updateSessWrongHint);
-  on("photoFile", "change", onPhotoFilesPicked);
-  on("photoCam", "change", onPhotoFilesPicked);
-  // Switching booklet invalidates the staged photos + wrong numbers (each
-  // booklet restarts numbering at 1), but the already-confirmed matches from
-  // other booklets stay in the list.
-  on("photoBooklet", "change", () => {
-    resetStagedPhotos();
-    if ($("photoWrong")) $("photoWrong").value = "";
-  });
-  setupPhotoBooklets();
-  setupPhotoDropZone();
   on("revLesson", "change", fillRevTopics);
   on("importFile", "change", (e) => importData(e));
 
-  // Delegated handlers for dynamically generated trial inputs.
+  // Photo→topic AI importers own their own DOM wiring (file inputs, drop
+  // zone, booklet picker, confirm-list toggles).
+  generalPhotoImporter.init();
+  subjectPhotoImporter.init();
+
+  // Genel deneme net inputs.
   const netInputs = $("netInputs");
   if (netInputs) netInputs.addEventListener("input", recalcNet);
-  const topicChecks = $("topicChecks");
-  if (topicChecks)
-    topicChecks.addEventListener("change", (e) => {
-      if (e.target.matches('input[type="checkbox"]')) {
-        syncTopicCheck(e.target);
-        updatePhotoConfirmHint();
-      }
-    });
 
-  // Subject-trial (alan denemeleri) inputs.
+  // Alan deneme (subject trial) inputs. Switching ders re-scopes the AI, so
+  // the existing confirm matches are cleared.
   on("subjDogru", "input", recalcSubjectNet);
   on("subjYanlis", "input", recalcSubjectNet);
-  on("subjTrialSection", "change", buildSubjectTopicChecks);
-  const subjTopicChecks = $("subjTopicChecks");
-  if (subjTopicChecks)
-    subjTopicChecks.addEventListener("change", (e) => {
-      if (e.target.matches('input[type="checkbox"]')) syncSubjTopicCheck(e.target);
-    });
+  on("subjTrialSection", "change", onSubjSectionChange);
 
   window.addEventListener("hashchange", () => nav(location.hash.replace("#", "") || "konu"));
 }

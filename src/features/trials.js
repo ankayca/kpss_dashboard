@@ -16,7 +16,7 @@ import {
 import { TagGame } from "../tagGame.js";
 import { isActive } from "../nav.js";
 import { renderAnalytics } from "./analytics.js";
-import { renderConfirmList, clearPhotoResults } from "./photoImport.js";
+import { generalPhotoImporter } from "./photoImport.js";
 
 // Draft of topic→reason tags created before the trial is saved.
 let trialTopicTagsDraft = null;
@@ -36,7 +36,7 @@ export function buildTrialForm() {
   ).join("");
   // Wrong topics are no longer marked by hand; the AI confirmation list
   // (rendered into #topicChecks by photoImport) is the single source.
-  renderConfirmList();
+  generalPhotoImporter.renderConfirmList();
   recalcNet();
 }
 
@@ -50,12 +50,6 @@ export function recalcNet() {
     total += net;
   });
   $("netTotal").textContent = "Toplam: " + total.toFixed(2) + " net";
-}
-
-/** Keep the visual "checked" state of a topic checkbox label in sync. */
-export function syncTopicCheck(checkbox) {
-  const label = checkbox.closest(".chk");
-  if (label) label.classList.toggle("checked", checkbox.checked);
 }
 
 function getCheckedTrialTopics() {
@@ -115,7 +109,7 @@ async function finishTrialSave(payload) {
     $("dogru_" + k).value = "";
     $("yanlis_" + k).value = "";
   });
-  clearPhotoResults();
+  generalPhotoImporter.clearResults();
   trialTopicTagsDraft = null;
   updateTrialTagDraftHint();
   recalcNet();

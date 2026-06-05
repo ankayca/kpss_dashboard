@@ -43,7 +43,7 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 const GEMINI_URL = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 const CLASSIFY_TIMEOUT_MS = 45_000;
-const MAX_CLASSIFY_IMAGES = 6;
+const MAX_CLASSIFY_IMAGES = 15;
 const MAX_CLASSIFY_WRONG = 60;
 
 /* Tiny in-memory cache so identical re-submits (retries, the same published
@@ -453,7 +453,7 @@ function readBody(req) {
     let tooBig = false;
     req.on("data", (chunk) => {
       data += chunk;
-      if (data.length > 5_000_000) {
+      if (data.length > 24_000_000) {
         tooBig = true;
         req.destroy();
       }

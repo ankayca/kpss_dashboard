@@ -1,7 +1,8 @@
 /* ============================================================
    FEATURE — Alan Denemeleri (single-subject mock exams).
    Mirrors the general trial flow (genel denemeler) but scoped to
-   one ders: enter D/Y, auto-net, then tag the wrong topics.
+   one ders: enter D/Y, auto-net, photograph the page so the AI maps
+   wrong questions → topics, confirm them, then tag reasons on save.
    ============================================================ */
 import { SECTIONS, SECTION_KEYS } from "../config.js";
 import { Store } from "../store.js";
@@ -17,6 +18,7 @@ import {
 import { TagGame } from "../tagGame.js";
 import { isActive } from "../nav.js";
 import { renderAnalytics } from "./analytics.js";
+import { subjectPhotoImporter } from "./photoImport.js";
 
 // Draft of topic→reason tags created before the trial is saved.
 let subjTopicTagsDraft = null;
@@ -30,27 +32,14 @@ export function fillSubjectTrialSection() {
     (k) => `<option value="${k}">${esc(SECTIONS[k].label)}</option>`
   ).join("");
   if (cur && SECTIONS[cur]) sel.value = cur;
-  buildSubjectTopicChecks();
+  // Wrong topics come from the AI confirmation list (rendered into
+  // #subjTopicChecks by photoImport) — no manual topic grid.
+  subjectPhotoImporter.renderConfirmList();
 }
 
-/** Render the topic checkboxes for the currently selected ders. */
-export function buildSubjectTopicChecks() {
-  const wrap = $("subjTopicChecks");
-  if (!wrap) return;
-  const k = currentSection();
-  if (!k) {
-    wrap.innerHTML = "";
-    return;
-  }
-  const chks = SECTIONS[k].topics
-    .map(
-      (tp) =>
-        `<label class="chk"><input type="checkbox" data-section="${k}" value="${escAttr(tp)}"> ${esc(tp)}</label>`
-    )
-    .join("");
-  wrap.innerHTML = `<div class="topic-group"><h4>${esc(SECTIONS[k].label)}</h4><div class="chk-grid">${chks}</div></div>`;
-  subjTopicTagsDraft = null;
-  updateSubjTagDraftHint();
+/** Switching ders invalidates the AI matches (topics are section-specific). */
+export function onSubjSectionChange() {
+  subjectPhotoImporter.clearResults();
 }
 
 function currentSection() {
@@ -65,17 +54,17 @@ export function recalcSubjectNet() {
   $("subjNetVal").textContent = netFromCounts(d, y).toFixed(2) + " net";
 }
 
-/** Keep the visual "checked" state of a topic checkbox label in sync. */
-export function syncSubjTopicCheck(checkbox) {
-  const label = checkbox.closest(".chk");
-  if (label) label.classList.toggle("checked", checkbox.checked);
-}
-
 function getCheckedSubjTopics() {
+  // Multiple wrong questions can map to the same topic; collapse to one
+  // entry per section|topic (wrongTopicTags stores one reason per topic).
+  const seen = new Set();
   const list = [];
-  document.querySelectorAll("#subjTopicChecks input:checked").forEach((cb) =>
-    list.push({ section: cb.dataset.section, topic: cb.value, id: cb.dataset.section + "|" + cb.value })
-  );
+  document.querySelectorAll("#subjTopicChecks input:checked").forEach((cb) => {
+    const id = cb.dataset.section + "|" + cb.value;
+    if (seen.has(id)) return;
+    seen.add(id);
+    list.push({ section: cb.dataset.section, topic: cb.value, id });
+  });
   return list;
 }
 
@@ -88,17 +77,6 @@ export function updateSubjTagDraftHint() {
   }
   const n = listTrialWrongEntries({ wrongTopicTags: subjTopicTagsDraft }).length;
   el.textContent = n ? `${n} konu etiketlendi (kayda dahil)` : "";
-}
-
-export function tagSubjTopicsEarly() {
-  const checked = getCheckedSubjTopics();
-  if (!checked.length) return toast("Önce yanlış konuları işaretle.", true);
-  const items = checked.map((c) => ({ id: c.id, label: c.topic, sublabel: SECTIONS[c.section].label }));
-  TagGame.open(items, (results) => {
-    subjTopicTagsDraft = tagsToWrongTopicTags(results);
-    updateSubjTagDraftHint();
-    toast("Konu sebepleri hazır — denemeyi kaydet.");
-  });
 }
 
 function runTagGameForSubj(checkedTopics, onComplete) {
@@ -120,10 +98,7 @@ async function finishSubjectTrialSave(payload) {
   $("subjTrialNotes").value = "";
   $("subjDogru").value = "";
   $("subjYanlis").value = "";
-  document.querySelectorAll("#subjTopicChecks input:checked").forEach((cb) => {
-    cb.checked = false;
-    cb.closest(".chk").classList.remove("checked");
-  });
+  subjectPhotoImporter.clearResults();
   subjTopicTagsDraft = null;
   updateSubjTagDraftHint();
   recalcSubjectNet();

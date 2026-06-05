@@ -254,11 +254,35 @@
         <div class="field" style="display:flex; align-items:flex-end;"><div id="subjNetVal" class="net-val">0.00 net</div></div>
       </div>
 
-      <div style="margin: 14px 0 4px; font-weight:700; font-size:14px;">Yanlış Konular</div>
-      <div class="sub">Yanlış yaptığın konuları işaretle; kaydederken her biri için sebep etiketlersin. İstersen önce hızlı etiketle:</div>
-      <div class="btn-row" style="margin-bottom:10px">
-        <button type="button" class="btn ghost sm" data-action="tagSubjTopicsEarly">İşaretli konuları etiketle</button>
-        <span class="sub" id="subjTagDraftHint" style="margin:0"></span>
+      <div class="photo-import">
+        <div style="font-weight:700; font-size:14px;">Fotoğraftan yanlış konu çıkar (AI)</div>
+        <div class="sub">Alan denemesi sayfasının fotoğrafını yükle ve yanlış soru numaralarını yaz; AI, seçtiğin dersin konularıyla eşleştirip aşağıda onayına sunar.</div>
+        <div class="field">
+          <label>Sayfa fotoğrafı</label>
+          <div id="subjPhotoDrop" class="photo-drop" role="button" tabindex="0" aria-label="Fotoğraf ekle">
+            <div class="photo-drop-ico">🖼️</div>
+            <div class="photo-drop-text">
+              <strong>Fotoğrafları buraya sürükle</strong>
+              <span>ya da dosya seçmek için tıkla</span>
+            </div>
+            <button type="button" class="btn ghost sm photo-cam-btn" data-action="subjPhotoCamera">📷 Fotoğraf çek</button>
+          </div>
+          <input type="file" id="subjPhotoFile" accept="image/*" multiple hidden />
+          <input type="file" id="subjPhotoCam" accept="image/*" capture="environment" hidden />
+        </div>
+        <div class="field"><label>Yanlış sorular</label><input type="text" id="subjPhotoWrong" placeholder="3, 7, 12" /></div>
+        <div id="subjPhotoThumbs" class="photo-thumbs"></div>
+        <div class="btn-row" style="margin-top:8px">
+          <button type="button" class="btn sm" id="subjPhotoClassifyBtn" data-action="runSubjPhotoClassify">Konuları bul (AI)</button>
+          <span class="sub" id="subjPhotoStatus" style="margin:0"></span>
+        </div>
+      </div>
+
+      <div style="margin: 14px 0 4px; font-weight:700; font-size:14px;">Yanlış Konular — onay</div>
+      <div class="sub">AI'nın bulduğu yanlış soru → konu eşleşmeleri. Doğru olanları işaretli bırak, hatalı olanların işaretini kaldır. Kaydederken işaretli her konu için sebep etiketlersin.</div>
+      <div class="btn-row" style="margin:6px 0 10px">
+        <button type="button" class="btn ghost sm" data-action="clearSubjPhotoResults">Listeyi temizle</button>
+        <span class="sub" id="subjPhotoConfirmHint" style="margin:0"></span>
       </div>
       <div id="subjTopicChecks"></div>
 
