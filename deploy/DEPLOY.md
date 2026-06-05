@@ -161,6 +161,39 @@ Back up the whole thing by copying that folder:
 sudo cp -r /var/lib/kpss-dashboard ~/kpss-backup-$(date +%F)
 ```
 
+## Enabling the photo→topic AI (Gemini)
+
+The "Fotoğraftan yanlış konu çıkar" feature calls Google Gemini server-side.
+The API key lives **only on the Pi**, in `/etc/kpss-dashboard.env` (mode 600,
+never committed), and is loaded by the `kpss-api` service via `EnvironmentFile`.
+
+Get a key from [Google AI Studio](https://aistudio.google.com/apikey), then on
+the **Pi** either pass it through the deploy script:
+
+```bash
+cd ~/kpss_dashboard && git pull
+GEMINI_API_KEY=AIza...your-key ./deploy/deploy-on-pi.sh
+```
+
+…or write the file directly and restart:
+
+```bash
+sudo tee /etc/kpss-dashboard.env >/dev/null <<'EOF'
+GEMINI_API_KEY=AIza...your-key
+# GEMINI_MODEL=gemini-2.5-flash-lite   # optional override
+EOF
+sudo chmod 600 /etc/kpss-dashboard.env
+sudo systemctl restart kpss-api
+```
+
+Verify (logged in, with a session cookie) — without a key the endpoint returns
+`503 "AI yapılandırılmamış"`; with one it returns a JSON `results` array.
+Re-running the deploy script **without** `GEMINI_API_KEY` keeps the existing key.
+
+> Cost: the call uses `gemini-2.5-flash-lite` with downscaled images and batches
+> all wrong questions into one request, so each upload is a tiny fraction of a
+> cent (the free tier typically covers a personal/family deployment).
+
 ## Updating after code changes
 
 **Front-end only** (HTML/CSS/JS) — from your dev machine:

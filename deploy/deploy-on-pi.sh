@@ -6,6 +6,7 @@ APP_DIR="/var/www/kpss-dashboard"
 NGINX_SITE="/etc/nginx/sites-available/kpss-dashboard"
 API_SERVICE="/etc/systemd/system/kpss-api.service"
 DATA_DIR="/var/lib/kpss-dashboard"
+ENV_FILE="/etc/kpss-dashboard.env"   # secrets (GEMINI_API_KEY, …) — kept off git
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 ensure_nginx() {
@@ -29,10 +30,33 @@ ensure_node() {
   sudo apt-get install -y nodejs npm
 }
 
+ensure_env_file() {
+  # Holds secrets injected into the service (e.g. GEMINI_API_KEY for the
+  # photo→topic AI). Created with restrictive perms; never committed to git.
+  if [[ ! -f "${ENV_FILE}" ]]; then
+    echo "==> Creating ${ENV_FILE} (secrets)..."
+    sudo touch "${ENV_FILE}"
+    sudo chmod 600 "${ENV_FILE}"
+  fi
+  # Only (re)write the key when provided at deploy time; otherwise keep the
+  # existing file untouched so a rerun never wipes the configured key.
+  if [[ -n "${GEMINI_API_KEY:-}" ]]; then
+    echo "==> Writing GEMINI_API_KEY to ${ENV_FILE}..."
+    {
+      echo "GEMINI_API_KEY=${GEMINI_API_KEY}"
+      [[ -n "${GEMINI_MODEL:-}" ]] && echo "GEMINI_MODEL=${GEMINI_MODEL}"
+    } | sudo tee "${ENV_FILE}" >/dev/null
+    sudo chmod 600 "${ENV_FILE}"
+  elif ! grep -q '^GEMINI_API_KEY=' "${ENV_FILE}" 2>/dev/null; then
+    echo "    (no GEMINI_API_KEY set — photo→topic AI stays disabled until you add one to ${ENV_FILE})"
+  fi
+}
+
 ensure_api() {
   echo "==> Setting up storage API service..."
   sudo mkdir -p "${DATA_DIR}"
   sudo chown -R "${USER}:${USER}" "${DATA_DIR}"
+  ensure_env_file
 
   local node_bin
   node_bin="$(command -v node)"
@@ -50,6 +74,7 @@ WorkingDirectory=${REPO_ROOT}
 ExecStart=${node_bin} ${REPO_ROOT}/server/server.js
 Environment=PORT=8090
 Environment=KPSS_DATA_DIR=${DATA_DIR}
+EnvironmentFile=-${ENV_FILE}
 Restart=on-failure
 RestartSec=3
 
