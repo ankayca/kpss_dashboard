@@ -25,6 +25,12 @@ import {
   syncTopicCheck
 } from "./features/trials.js";
 import {
+  onPhotoFilesPicked,
+  runPhotoClassify,
+  applyPhotoResults,
+  clearPhotoResults
+} from "./features/photoImport.js";
+import {
   addSubjectTrial,
   deleteSubjectTrial,
   tagSubjTopicsEarly,
@@ -71,6 +77,9 @@ const ACTIONS = {
   saveSessionPerfect: () => saveSessionPerfect(),
   tagTrialTopicsEarly: () => tagTrialTopicsEarly(),
   addTrial: () => addTrial(),
+  runPhotoClassify: () => runPhotoClassify(),
+  applyPhotoResults: () => applyPhotoResults(),
+  clearPhotoResults: () => clearPhotoResults(),
   tagSubjTopicsEarly: () => tagSubjTopicsEarly(),
   addSubjectTrial: () => addSubjectTrial(),
   addReviewManual: () => addReviewManual(),
@@ -120,6 +129,7 @@ export function setupEventListeners() {
   };
   on("sessBook", "change", fillSessTopics);
   on("sessWrong", "input", updateSessWrongHint);
+  on("photoFile", "change", onPhotoFilesPicked);
   on("revLesson", "change", fillRevTopics);
   on("importFile", "change", (e) => importData(e));
 

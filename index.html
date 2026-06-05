@@ -180,6 +180,21 @@
       <div id="netInputs"></div>
       <div id="netTotal">Toplam: 0.00 net</div>
 
+      <div class="photo-import">
+        <div style="font-weight:700; font-size:14px;">Fotoğraftan yanlış konu çıkar (AI)</div>
+        <div class="sub">Deneme sayfasının fotoğrafını yükle ve yanlış soru numaralarını yaz; AI konuları bulup aşağıdaki listede işaretler.</div>
+        <div class="form-row">
+          <div class="field"><label>Sayfa fotoğrafı</label><input type="file" id="photoFile" accept="image/*" capture="environment" multiple /></div>
+          <div class="field" style="flex:2"><label>Yanlış sorular</label><input type="text" id="photoWrong" placeholder="3, 7, 12" /></div>
+        </div>
+        <div id="photoThumbs" class="photo-thumbs"></div>
+        <div class="btn-row" style="margin-top:8px">
+          <button type="button" class="btn sm" id="photoClassifyBtn" data-action="runPhotoClassify">Konuları bul (AI)</button>
+          <span class="sub" id="photoStatus" style="margin:0"></span>
+        </div>
+        <div id="photoResults" class="photo-results"></div>
+      </div>
+
       <div style="margin: 14px 0 4px; font-weight:700; font-size:14px;">Yanlış Konular</div>
       <div class="sub">Yanlış yaptığın konuları işaretle; kaydederken her biri için sebep etiketlersin. İstersen önce hızlı etiketle:</div>
       <div class="btn-row" style="margin-bottom:10px">

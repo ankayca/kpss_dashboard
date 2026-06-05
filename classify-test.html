@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Classify Test — KPSS</title>
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: system-ui, sans-serif; max-width: 820px; margin: 24px auto; padding: 0 16px;
+         background:#181614; color:#efe8df; }
+  h1 { font-size: 18px; }
+  .muted { color:#a99; font-size: 13px; }
+  fieldset { border:1px solid #38332d; border-radius:10px; margin:14px 0; padding:12px 14px; }
+  label { display:block; font-size:13px; margin:8px 0 4px; font-weight:600; }
+  input[type=text], select { width:100%; padding:8px; border-radius:8px; border:1px solid #38332d;
+         background:#1f1d1a; color:#efe8df; box-sizing:border-box; }
+  button { margin-top:12px; padding:9px 16px; border:0; border-radius:8px; background:#a23b37;
+         color:#fff; font-weight:700; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .thumbs { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .thumbs img { width:90px; height:90px; object-fit:cover; border-radius:8px; border:1px solid #38332d; }
+  pre { background:#0f0e0c; border:1px solid #38332d; border-radius:8px; padding:12px;
+        overflow:auto; font-size:12.5px; white-space:pre-wrap; word-break:break-word; }
+  .meta { font-size:12px; color:#cb6f63; margin:8px 0; }
+</style>
+</head>
+<body>
+<h1>Classify Test Harness</h1>
+<p class="muted">
+  Deneme sayfası fotoğrafını yükle → <code>/api/classify</code> çıktısını ham JSON olarak gör.
+  Uygulamada <strong>giriş yapmış olman gerekir</strong> (oturum çerezi kullanılır). Bu sayfa yalnızca geliştirme/test içindir.
+</p>
+
+<fieldset>
+  <label>Sınav profili</label>
+  <select id="profile"></select>
+
+  <label>Sayfa fotoğrafı (1+ sayfa)</label>
+  <input type="file" id="file" accept="image/*" multiple />
+  <div class="thumbs" id="thumbs"></div>
+
+  <label>Yanlış soru numaraları (boş bırakırsan tüm sorular)</label>
+  <input type="text" id="wrong" placeholder="3, 7, 12" />
+
+  <button id="go">Konuları bul (AI)</button>
+  <span class="meta" id="status"></span>
+</fieldset>
+
+<div class="meta" id="meta"></div>
+<pre id="out">// sonuç burada görünecek</pre>
+
+<script type="module">
+import { PROFILES } from "/src/config.js";
+
+const MAX_DIM = 1200, JPEG_QUALITY = 0.6;
+const $ = (id) => document.getElementById(id);
+let files = [];
+
+const profileSel = $("profile");
+profileSel.innerHTML = Object.values(PROFILES)
+  .map((p) => `<option value="${p.id}">${p.examName}</option>`).join("");
+
+function sectionsFor(profileId) {
+  const prof = PROFILES[profileId];
+  return Object.entries(prof.sections).map(([key, s]) => ({ key, label: s.label, topics: s.topics }));
+}
+
+function loadImage(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); res(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("read fail")); };
+    img.src = url;
+  });
+}
+async function compress(file) {
+  const img = await loadImage(file);
+  const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+  const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  c.getContext("2d").drawImage(img, 0, 0, w, h);
+  return { mime: "image/jpeg", data: c.toDataURL("image/jpeg", JPEG_QUALITY).split(",")[1] || "" };
+}
+
+$("file").addEventListener("change", (e) => {
+  files = Array.from(e.target.files || []).filter((f) => /^image\//.test(f.type));
+  $("thumbs").innerHTML = files.map((f) => `<img src="${URL.createObjectURL(f)}" />`).join("");
+});
+
+$("go").addEventListener("click", async () => {
+  if (!files.length) { $("status").textContent = "Önce görsel seç."; return; }
+  $("go").disabled = true; $("status").textContent = "Hazırlanıyor…"; $("out").textContent = "";
+  const wrong = ($("wrong").value.match(/\d+/g) || []).map(Number);
+  try {
+    const images = await Promise.all(files.map(compress));
+    const approxKB = Math.round(images.reduce((a, i) => a + i.data.length * 0.75, 0) / 1024);
+    $("status").textContent = "AI çağrılıyor…";
+    const t0 = performance.now();
+    const res = await fetch("/api/classify", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ images, wrong, sections: sectionsFor(profileSel.value) })
+    });
+    const ms = Math.round(performance.now() - t0);
+    const text = await res.text();
+    let json; try { json = JSON.parse(text); } catch { json = text; }
+    $("meta").textContent = `HTTP ${res.status} · ${ms} ms · gönderilen görsel ~${approxKB} KB · model: ${json && json.model || "?"}`;
+    $("out").textContent = JSON.stringify(json, null, 2);
+    $("status").textContent = res.ok ? "Tamam." : "Hata.";
+  } catch (e) {
+    $("status").textContent = "Başarısız.";
+    $("out").textContent = String(e && e.message || e);
+  } finally {
+    $("go").disabled = false;
+  }
+});
+</script>
+</body>
+</html>

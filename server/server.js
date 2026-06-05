@@ -14,6 +14,8 @@
    Env:  PORT             (default 8090)
          KPSS_DATA_DIR    (default ./server/data)
          GOOGLE_CLIENT_ID (default: the dashboard's client id)
+         GEMINI_API_KEY   (optional; enables POST /api/classify — photo→topic AI)
+         GEMINI_MODEL     (default gemini-2.5-flash-lite)
    ============================================================ */
 import http from "node:http";
 import crypto from "node:crypto";
@@ -31,6 +33,40 @@ const DATA_DIR = process.env.KPSS_DATA_DIR
 const GOOGLE_CLIENT_ID =
   process.env.GOOGLE_CLIENT_ID ||
   "265612832039-robfjtm3on0ietmkdoon6ihuu4nrdp74.apps.googleusercontent.com";
+
+/* ---- AI topic classification (Gemini) ----
+   Reads a photographed deneme page + the wrong question numbers and
+   maps each to a {section, topic} from the user's profile taxonomy.
+   The API key is server-side only (never shipped to the browser). */
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+const GEMINI_URL = (model) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+const CLASSIFY_TIMEOUT_MS = 45_000;
+const MAX_CLASSIFY_IMAGES = 6;
+const MAX_CLASSIFY_WRONG = 60;
+
+/* Tiny in-memory cache so identical re-submits (retries, the same published
+   deneme page) reuse the model answer instead of re-billing the API. */
+const CLASSIFY_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const CLASSIFY_CACHE_MAX = 200;
+const classifyCache = new Map(); // key -> { results, model, exp }
+
+function classifyCacheGet(key) {
+  const e = classifyCache.get(key);
+  if (!e) return null;
+  if (e.exp < Date.now()) {
+    classifyCache.delete(key);
+    return null;
+  }
+  return e;
+}
+function classifyCacheSet(key, val) {
+  if (classifyCache.size >= CLASSIFY_CACHE_MAX) {
+    classifyCache.delete(classifyCache.keys().next().value);
+  }
+  classifyCache.set(key, { ...val, exp: Date.now() + CLASSIFY_CACHE_TTL_MS });
+}
 
 /** Exam profiles a new account may pick from (mirrors src/config.js). */
 const PROFILE_IDS = ["kpssLisans", "agsOkulOncesi"];
@@ -215,6 +251,178 @@ async function verifyGoogleToken(credential) {
     name: info.name || info.email || "Google Kullanıcısı",
     emailVerified: info.email_verified === "true" || info.email_verified === true
   };
+}
+
+/* ---- AI topic classification (Gemini REST via global fetch) ---- */
+
+/** Turkish-aware label normalization for matching model output to the taxonomy. */
+function normLabel(s) {
+  return String(s == null ? "" : s)
+    .toLocaleLowerCase("tr")
+    .replace(/[-_.]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Build the text instruction sent alongside the page image(s). */
+function buildClassifyPrompt(sections, wrong) {
+  const taxonomy = sections
+    .map((s) => `- ${s.key} (${s.label}): ${s.topics.join(" | ")}`)
+    .join("\n");
+  const wrongList = wrong.length ? wrong.join(", ") : "(fotoğraftaki tüm sorular)";
+  return [
+    "Bir KPSS deneme sınavı sayfasının fotoğrafı veriliyor (Türkçe).",
+    "Görseldeki el yazıları, işaretlemeler ve filigranları yok say; yalnızca basılı soru metnini kullan.",
+    "Aşağıdaki ders/konu listesinden YALNIZCA verilen değerleri kullanarak, belirtilen yanlış soru numaralarının her biri için dersi (section anahtarı) ve konuyu eşle.",
+    "",
+    "Ders / Konu listesi:",
+    taxonomy,
+    "",
+    "Eşlenecek yanlış soru numaraları: " + wrongList,
+    "",
+    "Kurallar:",
+    "- section değeri yukarıdaki anahtarlardan biri olmalı.",
+    "- topic değeri o dersin konu listesindeki ifadelerden BİRİYLE birebir aynı olmalı.",
+    "- Emin değilsen en olası konuyu seç ve confidence değerini düşür (0-1 arası).",
+    "- Yalnızca JSON dizi döndür."
+  ].join("\n");
+}
+
+async function callGemini(parts) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CLASSIFY_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(GEMINI_URL(GEMINI_MODEL), {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts }],
+        generationConfig: {
+          temperature: 0,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                questionNo: { type: "INTEGER" },
+                section: { type: "STRING" },
+                topic: { type: "STRING" },
+                confidence: { type: "NUMBER" }
+              },
+              required: ["questionNo", "section", "topic"]
+            }
+          }
+        }
+      })
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const j = await res.json();
+      detail = j && j.error && j.error.message ? j.error.message : "";
+    } catch (_) {
+      /* ignore */
+    }
+    throw new Error(`Gemini hatası (${res.status})${detail ? ": " + detail : ""}`);
+  }
+  const data = await res.json();
+  const cand = data && data.candidates && data.candidates[0];
+  const text =
+    cand && cand.content && Array.isArray(cand.content.parts)
+      ? cand.content.parts.map((p) => p.text || "").join("")
+      : "";
+  if (!text) throw new Error("Gemini boş yanıt döndü");
+  return JSON.parse(text);
+}
+
+/** Validate model output against the allowed taxonomy; drop anything off-list. */
+function sanitizeResults(raw, sections) {
+  if (!Array.isArray(raw)) return [];
+  const byKey = new Map();
+  sections.forEach((s) =>
+    byKey.set(s.key, { label: s.label, norm: new Map(s.topics.map((t) => [normLabel(t), t])) })
+  );
+  const out = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const sec = byKey.get(String(item.section || ""));
+    if (!sec) continue;
+    const topic = sec.norm.get(normLabel(item.topic));
+    if (!topic) continue;
+    const questionNo = parseInt(item.questionNo, 10);
+    let confidence = Number(item.confidence);
+    if (!Number.isFinite(confidence)) confidence = 0.5;
+    out.push({
+      questionNo: Number.isFinite(questionNo) ? questionNo : null,
+      section: String(item.section),
+      sectionLabel: sec.label,
+      topic,
+      confidence: Math.min(1, Math.max(0, confidence))
+    });
+  }
+  return out;
+}
+
+async function handleClassify(req, res) {
+  if (!GEMINI_API_KEY) {
+    return send(res, 503, { error: "AI yapılandırılmamış (sunucuda GEMINI_API_KEY tanımlı değil)" });
+  }
+  const body = (await readBody(req)) || {};
+  const images = Array.isArray(body.images) ? body.images.slice(0, MAX_CLASSIFY_IMAGES) : [];
+  const wrong = Array.isArray(body.wrong)
+    ? [
+        ...new Set(
+          body.wrong.map((n) => parseInt(n, 10)).filter((n) => Number.isInteger(n) && n > 0)
+        )
+      ].slice(0, MAX_CLASSIFY_WRONG)
+    : [];
+  const sections = (Array.isArray(body.sections) ? body.sections : [])
+    .map((s) => ({
+      key: String((s && s.key) || ""),
+      label: String((s && s.label) || ""),
+      topics: Array.isArray(s && s.topics) ? s.topics.map((t) => String(t)).filter(Boolean) : []
+    }))
+    .filter((s) => s.key && s.topics.length);
+
+  if (!images.length) return send(res, 400, { error: "En az bir görsel gerekli" });
+  if (!sections.length) return send(res, 400, { error: "Konu listesi gerekli" });
+
+  const imageParts = [];
+  for (const img of images) {
+    const mime = String((img && img.mime) || "image/jpeg");
+    const data = String((img && img.data) || "");
+    if (data && /^image\/(jpe?g|png|webp)$/.test(mime)) {
+      imageParts.push({ inline_data: { mime_type: mime, data } });
+    }
+  }
+  if (!imageParts.length) return send(res, 400, { error: "Geçerli görsel bulunamadı" });
+
+  const cacheKey = crypto
+    .createHash("sha256")
+    .update(JSON.stringify({ m: GEMINI_MODEL, wrong, sections, imgs: imageParts.map((p) => p.inline_data.data) }))
+    .digest("hex");
+  const cached = classifyCacheGet(cacheKey);
+  if (cached) return send(res, 200, { results: cached.results, model: cached.model, cached: true });
+
+  const parts = [{ text: buildClassifyPrompt(sections, wrong) }, ...imageParts];
+  let raw;
+  try {
+    raw = await callGemini(parts);
+  } catch (e) {
+    const aborted = e && e.name === "AbortError";
+    return send(res, aborted ? 504 : 502, {
+      error: aborted ? "AI yanıtı zaman aşımına uğradı" : (e && e.message) || "AI çağrısı başarısız"
+    });
+  }
+  const results = sanitizeResults(raw, sections);
+  classifyCacheSet(cacheKey, { results, model: GEMINI_MODEL });
+  return send(res, 200, { results, model: GEMINI_MODEL });
 }
 
 /* ------------------------------ HTTP helpers ------------------------------ */
@@ -425,6 +633,13 @@ const server = http.createServer(async (req, res) => {
       }
 
       return send(res, 404, { error: "not found" });
+    }
+
+    /* ---------------- AI topic classification (session-gated) ---------------- */
+    if (parts[1] === "classify" && parts.length === 2 && req.method === "POST") {
+      const user = sessionUser(token);
+      if (!user) return send(res, 401, { error: "Oturum gerekli" });
+      return handleClassify(req, res);
     }
 
     /* ---------------- data endpoints (session-gated) ---------------- */

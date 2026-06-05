@@ -489,3 +489,25 @@ body.tag-game-open { overflow: hidden; }
   .bar-row .name { width: 130px; font-size:12px;}
   #netInputs { grid-template-columns: repeat(2,1fr); }
 }
+
+/* ---- Fotoğraftan yanlış konu çıkarma (AI) ---- */
+.photo-import {
+  margin-top: 14px; padding: 12px; border: 1px dashed var(--border);
+  border-radius: 10px; background: var(--bg-2);
+}
+.photo-thumbs { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.photo-thumb {
+  width: 78px; height: 78px; object-fit: cover; border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.photo-results { margin-top: 10px; }
+.photo-res-row {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding: 7px 9px; margin: 5px 0; border:1px solid var(--border);
+  border-radius: 9px; background: var(--bg-3); cursor:pointer;
+}
+.photo-res-row.low { border-color: rgba(var(--rose-rgb),.45); }
+.photo-res-row input { width:15px; height:15px; accent-color: var(--accent); cursor:pointer; }
+.photo-res-q { font-weight: 700; font-size: 12.5px; min-width: 64px; }
+.photo-res-arrow { color: var(--text-dim); }
+.photo-res-conf { margin-left:auto; font-size: 11px; color: var(--text-dim); }
