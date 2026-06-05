@@ -281,7 +281,10 @@ function buildClassifyPrompt(sections, wrong) {
     "Eşlenecek yanlış soru numaraları: " + wrongList,
     "",
     "Kurallar:",
-    "- section değeri yukarıdaki anahtarlardan biri olmalı.",
+    "- Önce sorunun konusunu belirleyen anahtar ifadeyi (evidence) soru metninden birebir al; sonra konuyu seç.",
+    "- Geometri/şekil içeren sorular: üçgen → 'Üçgenler'; kare/dikdörtgen/yamuk/paralelkenar/çokgen → 'Çokgenler ve Dörtgenler'; çember/daire/teğet/yay → 'Çember ve Daire'; silindir/küp/prizma/koni/küre/katı cisim → 'Katı Cisimler'; açı → 'Açılar'; koordinat/analitik → 'Analitik Geometri'. Bu soruları ASLA 'Problemler' olarak işaretleme.",
+    "- 'Problemler' yalnızca sayısal/sözel problem kurma soruları içindir (yaş, işçi, havuz, hız vb.).",
+    "- section değeri yukarıdaki anahtarlardan biri olmalı (ör. matematik, tarih).",
     "- topic değeri o dersin konu listesindeki ifadelerden BİRİYLE birebir aynı olmalı.",
     "- Emin değilsen en olası konuyu seç ve confidence değerini düşür (0-1 arası).",
     "- Yalnızca JSON dizi döndür."
@@ -308,6 +311,7 @@ async function callGemini(parts) {
               type: "OBJECT",
               properties: {
                 questionNo: { type: "INTEGER" },
+                evidence: { type: "STRING" },
                 section: { type: "STRING" },
                 topic: { type: "STRING" },
                 confidence: { type: "NUMBER" }
@@ -344,14 +348,20 @@ async function callGemini(parts) {
 /** Validate model output against the allowed taxonomy; drop anything off-list. */
 function sanitizeResults(raw, sections) {
   if (!Array.isArray(raw)) return [];
+  // The model sometimes returns the section *label* ("Matematik") or differing
+  // case instead of the key ("matematik"), so resolve by key OR label, fuzzily.
   const byKey = new Map();
-  sections.forEach((s) =>
-    byKey.set(s.key, { label: s.label, norm: new Map(s.topics.map((t) => [normLabel(t), t])) })
-  );
+  const resolve = new Map(); // normalized key/label -> canonical key
+  sections.forEach((s) => {
+    byKey.set(s.key, { key: s.key, label: s.label, norm: new Map(s.topics.map((t) => [normLabel(t), t])) });
+    resolve.set(normLabel(s.key), s.key);
+    resolve.set(normLabel(s.label), s.key);
+  });
   const out = [];
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
-    const sec = byKey.get(String(item.section || ""));
+    const key = resolve.get(normLabel(item.section));
+    const sec = key && byKey.get(key);
     if (!sec) continue;
     const topic = sec.norm.get(normLabel(item.topic));
     if (!topic) continue;
@@ -360,7 +370,7 @@ function sanitizeResults(raw, sections) {
     if (!Number.isFinite(confidence)) confidence = 0.5;
     out.push({
       questionNo: Number.isFinite(questionNo) ? questionNo : null,
-      section: String(item.section),
+      section: sec.key,
       sectionLabel: sec.label,
       topic,
       confidence: Math.min(1, Math.max(0, confidence))

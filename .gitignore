@@ -5,3 +5,6 @@ dist/
 .vite/
 coverage/
 server/data/
+.env
+.env.*
+!.env.example
