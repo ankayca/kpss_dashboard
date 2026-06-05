@@ -4,8 +4,80 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>KPSS Çalışma Paneli</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+
+<!-- ============ GİRİŞ EKRANI ============ -->
+<div class="auth-screen hidden" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <span class="logo">K</span>
+      <h1>KPSS Paneli</h1>
+      <p class="auth-sub">Çalışma takip sistemine giriş yap</p>
+    </div>
+
+    <div id="authForms">
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="tabLogin">Giriş Yap</button>
+        <button type="button" class="auth-tab" id="tabRegister">Kayıt Ol</button>
+      </div>
+
+      <!-- Giriş -->
+      <div class="auth-form" id="loginPanel">
+        <form id="loginForm">
+          <label>E-posta
+            <input type="email" id="loginEmail" autocomplete="email" required />
+          </label>
+          <label>Şifre
+            <input type="password" id="loginPassword" autocomplete="current-password" required />
+          </label>
+          <div class="auth-error hidden" id="loginError"></div>
+          <button type="submit" class="auth-submit">Giriş Yap</button>
+        </form>
+      </div>
+
+      <!-- Kayıt -->
+      <div class="auth-form hidden" id="registerPanel">
+        <form id="registerForm">
+          <label>İsim
+            <input type="text" id="regName" autocomplete="name" required />
+          </label>
+          <label>E-posta
+            <input type="email" id="regEmail" autocomplete="email" required />
+          </label>
+          <label>Şifre (en az 6 karakter)
+            <input type="password" id="regPassword" autocomplete="new-password" minlength="6" required />
+          </label>
+          <label>Sınav profili
+            <select id="regProfile" required></select>
+          </label>
+          <div class="auth-error hidden" id="registerError"></div>
+          <button type="submit" class="auth-submit">Kayıt Ol</button>
+        </form>
+      </div>
+
+      <div class="auth-divider"><span>veya</span></div>
+      <div class="google-wrap"><div id="googleBtn"></div></div>
+    </div>
+
+    <!-- Profil seçimi (ilk kez Google ile girenler) -->
+    <div class="auth-form hidden" id="profilePick">
+      <form id="profilePickForm">
+        <p class="auth-sub">Hangi sınava çalışıyorsun?</p>
+        <label>Sınav profili
+          <select id="pickProfile" required></select>
+        </label>
+        <div class="auth-error hidden" id="pickError"></div>
+        <button type="submit" class="auth-submit">Devam Et</button>
+      </form>
+    </div>
+
+    <div class="auth-help">
+      Yardım / soru: <a href="mailto:ankayca2121@gmail.com">ankayca2121@gmail.com</a>
+    </div>
+  </div>
+</div>
 
 <div class="topbar">
   <button class="menu-toggle" data-action="toggleSidebar" aria-label="Menü">≡</button>
@@ -19,13 +91,13 @@
     <span class="logo">K</span>
     <span>KPSS Paneli<small id="activeExam">Çalışma Takip Sistemi</small></span>
   </div>
-  <label class="user-switch">
-    <span class="user-switch-label">Kullanıcı</span>
-    <select id="userSelect" aria-label="Kullanıcı seç">
-      <option value="ahmet">Ahmet</option>
-      <option value="kubisko">Kübişko</option>
-    </select>
-  </label>
+  <div class="account-box">
+    <div class="account-info">
+      <strong id="activeUserSide">—</strong>
+      <small id="activeUserMail"></small>
+    </div>
+    <button class="logout-btn" id="logoutBtn" data-action="logout" type="button">Çıkış</button>
+  </div>
   <button class="nav-btn active" data-page="konu">Konu Testleri</button>
   <button class="nav-btn" data-page="deneme">Genel Denemeler</button>
   <button class="nav-btn" data-page="alan">Alan Denemeleri</button>
@@ -425,6 +497,13 @@
       </div>
       <div class="sub" id="dataStats"></div>
       <button class="btn danger sm" data-action="clearAll">Tüm Verileri Sil</button>
+    </div>
+
+    <div class="card">
+      <h2>Yardım & İletişim</h2>
+      <div class="sub">Soru, öneri ya da bir sorun mu var? Bize ulaş:
+        <a href="mailto:ankayca2121@gmail.com">ankayca2121@gmail.com</a>
+      </div>
     </div>
   </section>
 

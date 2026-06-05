@@ -10,11 +10,12 @@
 export const APP_BUILD = "2026-05-31-pi-storage-profiles";
 
 /* ---------------------------------------------------------------
-   PROFILES — one per hardcoded user.
+   PROFILES — one per exam type. A user picks one at signup; the
+   chosen profileId is stored on their account on the server.
    --------------------------------------------------------------- */
 
-/** Ahmet — KPSS Lisans Genel Yetenek / Genel Kültür. */
-const AHMET_SECTIONS = {
+/** KPSS Lisans — Genel Yetenek / Genel Kültür. */
+const KPSS_LISANS_SECTIONS = {
   turkce:      { label: "Türkçe",      topics: ["Sözcükte Anlam", "Cümlede Anlam", "Deyim-Atasözü", "Ses Bilgisi", "Yazım Kuralları", "Noktalama", "Cümle Bilgisi", "Paragraf"] },
   matematik:   { label: "Matematik",   topics: ["Temel Kavramlar", "Sayı Basamakları", "Bölme-Bölünebilme", "OBEB-OKEK", "Kesirler", "Ondalık Sayılar", "Yüzdeler", "Oran-Orantı", "Problemler", "Kümeler", "Permütasyon-Kombinasyon"] },
   tarih:       { label: "Tarih",       topics: ["Tarih Bilimine Giriş", "İlk Uygarlıklar", "İlk Türk Devletleri", "İslamiyet ve Türkler", "Selçuklular", "Osmanlı Kuruluş", "Osmanlı Yükselme", "Osmanlı Duraklama-Gerileme", "Osmanlı Dağılma", "Kurtuluş Savaşı", "Atatürk İlkeleri", "Türkiye Cumhuriyeti Tarihi"] },
@@ -22,8 +23,8 @@ const AHMET_SECTIONS = {
   vatandaslik: { label: "Vatandaşlık", topics: ["Hukuka Giriş", "Anayasa", "Temel Haklar", "Yasama", "Yürütme", "Yargı", "Yerel Yönetimler", "Ekonomi Temelleri", "Gelir Dağılımı", "Türkiye Ekonomisi"] }
 };
 
-/** Kübişko — AGS (Akademi Giriş Sınavı) + ÖABT Okul Öncesi Öğretmenliği. */
-const KUBISKO_SECTIONS = {
+/** AGS (Akademi Giriş Sınavı) + ÖABT Okul Öncesi Öğretmenliği. */
+const AGS_OKUL_ONCESI_SECTIONS = {
   sozel:           { label: "Sözel Yetenek",        topics: ["Sözcükte Anlam", "Cümlede Anlam", "Anlatımın Oluşması", "Paragrafta Anlam", "Sözel Mantık"] },
   sayisal:         { label: "Sayısal Yetenek",      topics: ["Temel Matematik", "Grafik ve Tablo Yorumlama", "Mantıksal Muhakeme Problemleri"] },
   tarih:           { label: "Tarih",                topics: ["Osmanlı Öncesi Türk Devletleri", "Osmanlı Tarihi", "Atatürk İlkeleri ve İnkılap Tarihi", "Çağdaş Türk ve Dünya Tarihi"] },
@@ -35,11 +36,17 @@ const KUBISKO_SECTIONS = {
 };
 
 export const PROFILES = {
-  ahmet:   { id: "ahmet",   name: "Ahmet",    examName: "KPSS Lisans (GY-GK)",                sections: AHMET_SECTIONS },
-  kubisko: { id: "kubisko", name: "Kübişko",  examName: "AGS · Okul Öncesi Öğretmenliği",   sections: KUBISKO_SECTIONS }
+  kpssLisans:    { id: "kpssLisans",    examName: "KPSS Lisans (GY-GK)",              sections: KPSS_LISANS_SECTIONS },
+  agsOkulOncesi: { id: "agsOkulOncesi", examName: "AGS · Okul Öncesi Öğretmenliği",   sections: AGS_OKUL_ONCESI_SECTIONS }
 };
 
-export const DEFAULT_PROFILE = "ahmet";
+export const DEFAULT_PROFILE = "kpssLisans";
+
+/** List for the signup exam-profile picker. */
+export const PROFILE_OPTIONS = Object.values(PROFILES).map((p) => ({
+  id: p.id,
+  examName: p.examName
+}));
 
 /* ---------------------------------------------------------------
    ACTIVE PROFILE — live bindings consumed across the app.

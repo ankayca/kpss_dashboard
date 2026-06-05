@@ -49,10 +49,21 @@ import {
   clearAll
 } from "./features/settings.js";
 import { TagGame } from "./tagGame.js";
+import { Auth } from "./auth.js";
+
+async function doLogout() {
+  try {
+    await Auth.logout();
+  } catch (_) {
+    /* clear session client-side regardless */
+  }
+  location.reload();
+}
 
 // Static control buttons: data-action -> handler.
 const ACTIONS = {
   toggleSidebar: () => toggleSidebar(),
+  logout: () => doLogout(),
   toggleTheme: () => toggleTheme(),
   setTheme: (el) => setTheme(el.dataset.theme),
   addBook: () => addBook(),

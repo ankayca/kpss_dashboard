@@ -5,7 +5,7 @@ import "./styles.css";
 import { APP_BUILD, PAGES, setActiveProfile } from "./config.js";
 import { Store } from "./store.js";
 import { hydrate, DB } from "./state.js";
-import { getUser, setUser } from "./user.js";
+import { runAuthGate } from "./auth.js";
 import { $, toast, todayStr } from "./utils.js";
 import { applyTheme } from "./theme.js";
 import { nav, registerPageRenderer } from "./nav.js";
@@ -19,24 +19,23 @@ import { updateSessWrongHint } from "./features/books.js";
 import { refreshAll } from "./refresh.js";
 import { setupEventListeners } from "./actions.js";
 
-function setupUserSwitcher(activeUser, profile) {
-  const sel = $("userSelect");
-  if (sel) {
-    sel.value = activeUser;
-    sel.addEventListener("change", (e) => setUser(e.target.value));
-  }
+function setupAccountBar(account, profile) {
   const whoTop = $("activeUserTop");
-  if (whoTop) whoTop.textContent = profile.name;
+  if (whoTop) whoTop.textContent = account.name;
+  const whoSide = $("activeUserSide");
+  if (whoSide) whoSide.textContent = account.name;
+  const mail = $("activeUserMail");
+  if (mail) mail.textContent = account.email || "";
   const exam = $("activeExam");
   if (exam) exam.textContent = profile.examName;
 }
 
 async function init() {
-  const user = getUser();
-  const profile = setActiveProfile(user);
-  Store.setUser(user);
-  setupUserSwitcher(user, profile);
-  document.title = `${profile.name} · KPSS Paneli`;
+  const account = await runAuthGate();
+  const profile = setActiveProfile(account.profileId);
+  Store.setUser(account.id);
+  setupAccountBar(account, profile);
+  document.title = `${account.name} · KPSS Paneli`;
 
   setupEventListeners();
   registerPageRenderer("analiz", renderAnalytics);

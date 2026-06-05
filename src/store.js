@@ -27,6 +27,7 @@ async function api(pathSuffix, options = {}) {
   let res;
   try {
     res = await fetch(base() + pathSuffix, {
+      credentials: "include",
       headers: options.body ? { "Content-Type": "application/json" } : undefined,
       ...options
     });
@@ -50,7 +51,7 @@ async function api(pathSuffix, options = {}) {
 export async function open() {
   let res;
   try {
-    res = await fetch(`${API_BASE}/health`);
+    res = await fetch(`${API_BASE}/health`, { credentials: "include" });
   } catch (e) {
     online = false;
     throw new Error("Sunucuya ulaşılamadı (Raspberry Pi çalışıyor mu?)");

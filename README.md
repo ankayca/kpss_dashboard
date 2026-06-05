@@ -5,10 +5,28 @@ on practice tests, full mock exams (with automatic net calculation), spaced-repe
 review queues, and an analytics dashboard (charts, mastery scores, study streaks).
 
 Data is stored **on the server** (a small Node API on the Raspberry Pi), one
-JSON file per user. There are two hardcoded users — **Ahmet** (KPSS Lisans
-GY-GK) and **Kübişko** (AGS · Okul Öncesi Öğretmenliği) — and no login; the app
-just picks which account it is. Switch users from the sidebar.
-Use **Ayarlar → Dışa Aktar** to back up a user to JSON and **İçe Aktar** to restore.
+JSON file per account.
+
+## Login
+
+The app requires login. Two options:
+
+- **E-posta + şifre** — register with a name, email, password, and an exam
+  profile (KPSS Lisans GY-GK or AGS · Okul Öncesi Öğretmenliği). Passwords are
+  hashed server-side with Node's built-in `crypto.scrypt`.
+- **Google ile giriş** — Google Sign-In (GIS). The browser obtains an ID token
+  which the server verifies via Google's `tokeninfo` endpoint. First-time Google
+  users pick their exam profile right after signing in.
+
+Sessions are kept in an `HttpOnly` cookie (`kpss_sid`); accounts live in
+`users.json` and sessions in `sessions.json` (both in the data dir). Each
+account's exam profile drives the sections/topics shown across the app.
+
+Set the Google OAuth Client ID via the `GOOGLE_CLIENT_ID` env var on the server
+(the same value is configured in `src/auth.js` for the front-end button).
+
+Use **Ayarlar → Dışa Aktar** to back up your data to JSON and **İçe Aktar** to
+restore. Help / questions: **ankayca2121@gmail.com**.
 
 ## Tech stack
 
@@ -38,11 +56,11 @@ API writes JSON files to `server/data/` (git-ignored); on the Pi it uses
 ```
 index.html              Markup only (no inline styles or scripts)
 server/
-  server.js             Zero-dependency storage API (per-user JSON on disk)
+  server.js             Zero-dependency storage + auth API (per-account JSON on disk)
 src/
-  main.js               Bootstrap / init (selects user + profile)
-  config.js             Per-user profiles (sections/topics), reasons, intervals
-  user.js               Hardcoded users + selection persistence
+  main.js               Bootstrap / init (auth gate + profile)
+  config.js             Exam profiles (sections/topics), reasons, intervals
+  auth.js               Login/register/Google sign-in + login screen UI
   store.js              Server API client (the only place coupled to storage)
   data.js               Defensive normalization for DB rows & imported JSON
   state.js              In-memory cache (DB), hydrate, persist, legacy migration
