@@ -121,6 +121,29 @@ export function renderNotifyInfo() {
     : "Bugün vadesi gelen tekrarlar için tarayıcı bildirimi al.";
 }
 
+/** Hide the "Nasıl çalışır?" onboarding banner and remember the choice. */
+export async function dismissOnboarding() {
+  DB.settings.onboardDismissed = true;
+  await persist(() => Store.setMeta("onboardDismissed", true));
+  renderOnboarding();
+}
+
+/** Re-show the onboarding banner (triggered from Ayarlar). */
+export async function showOnboarding() {
+  DB.settings.onboardDismissed = false;
+  await persist(() => Store.setMeta("onboardDismissed", false));
+  renderOnboarding();
+  toast("Tanıtım yeniden açıldı.");
+}
+
+/** Reflect the stored onboarding preference on all onboarding banners. */
+export function renderOnboarding() {
+  const dismissed = DB.settings.onboardDismissed === true;
+  document.querySelectorAll("[data-onboard]").forEach((el) => {
+    el.classList.toggle("hidden", dismissed);
+  });
+}
+
 export function exportData() {
   const payload = {
     books: DB.books,

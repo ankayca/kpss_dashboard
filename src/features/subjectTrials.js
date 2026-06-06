@@ -19,9 +19,21 @@ import { TagGame } from "../tagGame.js";
 import { isActive } from "../nav.js";
 import { renderAnalytics } from "./analytics.js";
 import { subjectPhotoImporter } from "./photoImport.js";
+import { createStepFlow } from "./stepFlow.js";
 
 // Draft of topic→reason tags created before the trial is saved.
 let subjTopicTagsDraft = null;
+
+// Progressive disclosure: each step appears once the previous is done.
+let stepFlow = null;
+function subjNetEntered() {
+  const d = $("subjDogru");
+  const y = $("subjYanlis");
+  return (d && d.value !== "") || (y && y.value !== "");
+}
+function updateSteps() {
+  if (stepFlow) stepFlow.update();
+}
 
 /* ---------- Form scaffolding ---------- */
 export function fillSubjectTrialSection() {
@@ -35,6 +47,16 @@ export function fillSubjectTrialSection() {
   // Wrong topics come from the AI confirmation list (rendered into
   // #subjTopicChecks by photoImport) — no manual topic grid.
   subjectPhotoImporter.renderConfirmList();
+
+  const stepEl = (n) => document.querySelector(`#page-alan .step[data-step="${n}"]`);
+  stepFlow = createStepFlow([
+    { el: stepEl(1), gate: subjNetEntered },
+    { el: stepEl(2), gate: () => subjectPhotoImporter.hasMatches() },
+    { el: stepEl(3), gate: () => subjectPhotoImporter.hasMatches() },
+    { el: stepEl(4) }
+  ]);
+  subjectPhotoImporter.setOnChange(updateSteps);
+  updateSteps();
 }
 
 /** Switching ders invalidates the AI matches (topics are section-specific). */
@@ -52,6 +74,7 @@ export function recalcSubjectNet() {
   const d = parseFloat($("subjDogru").value) || 0;
   const y = parseFloat($("subjYanlis").value) || 0;
   $("subjNetVal").textContent = netFromCounts(d, y).toFixed(2) + " net";
+  updateSteps();
 }
 
 function getCheckedSubjTopics() {
@@ -172,7 +195,7 @@ export function renderSubjectTrials() {
   if (!tbl) return;
   const trials = [...DB.subjectTrials].sort((a, b) => b.date.localeCompare(a.date));
   if (!trials.length) {
-    tbl.innerHTML = '<tbody><tr><td><div class="empty">Henüz alan denemesi yok.</div></td></tr></tbody>';
+    tbl.innerHTML = '<tbody><tr><td><div class="empty">Henüz alan denemesi yok. Yukarıdaki adımları izleyerek ilk alan denemeni ekle.</div></td></tr></tbody>';
     $("subjTrialSummary").textContent = "";
     return;
   }

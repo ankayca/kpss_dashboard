@@ -73,8 +73,12 @@ export function createPhotoImporter(config) {
   const useBooklet = !!config.useBooklet;
   let selectedFiles = []; // File[] staged for the current classify run
   let confirmed = []; // accumulated AI matches awaiting confirmation
+  let onChange = typeof config.onChange === "function" ? config.onChange : null;
 
   const el = (key) => (ids[key] ? $(ids[key]) : null);
+  const notify = () => {
+    if (onChange) onChange();
+  };
 
   /* ---------------- booklet scoping ---------------- */
 
@@ -326,6 +330,8 @@ export function createPhotoImporter(config) {
       const n = confirmed.filter((c) => c.checked).length;
       hint.textContent = confirmed.length ? `${n}/${confirmed.length} konu işaretli` : "";
     }
+    // Match/confirmation state changed — let the step flow re-evaluate.
+    notify();
   }
 
   /** Clear only the staged photos/inputs for the current run (keeps confirmed list). */
@@ -377,6 +383,16 @@ export function createPhotoImporter(config) {
     renderConfirmList();
   }
 
+  /** Whether the AI confirmation list currently holds any matches. */
+  function hasMatches() {
+    return confirmed.length > 0;
+  }
+
+  /** Register a callback fired whenever the confirmation state changes. */
+  function setOnChange(fn) {
+    onChange = typeof fn === "function" ? fn : null;
+  }
+
   return {
     init,
     runClassify,
@@ -384,7 +400,9 @@ export function createPhotoImporter(config) {
     openCamera,
     resetStaged,
     renderConfirmList,
-    updateConfirmHint
+    updateConfirmHint,
+    hasMatches,
+    setOnChange
   };
 }
 

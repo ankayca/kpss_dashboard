@@ -9,6 +9,22 @@ import { lessonLabel, getSessionWrongList, getSessionWrongTags } from "../domain
 import { TagGame } from "../tagGame.js";
 import { isActive } from "../nav.js";
 import { renderAnalytics } from "./analytics.js";
+import { createStepFlow } from "./stepFlow.js";
+
+// Progressive disclosure: the "yanlış kaydı gir" step appears once at
+// least one book exists (you record wrongs against a book).
+let stepFlow = null;
+function updateSteps() {
+  if (!stepFlow) {
+    const stepEl = (n) => document.querySelector(`#page-konu .step[data-step="${n}"]`);
+    if (!stepEl(1)) return;
+    stepFlow = createStepFlow([
+      { el: stepEl(1), gate: () => DB.books.length > 0 },
+      { el: stepEl(2) }
+    ]);
+  }
+  stepFlow.update();
+}
 
 /* ---------- Selects ---------- */
 export function fillLessonSelect() {
@@ -90,6 +106,7 @@ export function renderBooks() {
       "</tbody></table>";
   }
   fillSessBooks();
+  updateSteps();
 }
 
 /* ---------- Wrong-answer sessions ---------- */
@@ -194,7 +211,7 @@ export function renderSessions() {
   const t = $("sessTable");
   const sessions = [...DB.sessions].sort((a, b) => b.date.localeCompare(a.date));
   if (!sessions.length) {
-    t.innerHTML = '<tbody><tr><td><div class="empty">Henüz yanlış kaydı yok.</div></td></tr></tbody>';
+    t.innerHTML = '<tbody><tr><td><div class="empty">Henüz yanlış kaydı yok. Yukarıdan bir kitap seçip ilk yanlışlarını gir.</div></td></tr></tbody>';
     $("sessSummary").textContent = "";
     return;
   }

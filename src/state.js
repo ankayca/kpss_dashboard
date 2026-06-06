@@ -19,7 +19,8 @@ export const DB = {
     theme: "dark",
     dailyQuestionGoal: null,
     dailyMinuteGoal: null,
-    notifyReviews: false
+    notifyReviews: false,
+    onboardDismissed: false
   }
 };
 
@@ -57,14 +58,15 @@ export async function hydrate() {
   DB.subjectTrials = (subjectTrials || []).map(Data.normalizeSubjectTrial).filter(Boolean);
   DB.reviews = (reviews || []).map(Data.normalizeReview).filter(Boolean);
 
-  const [theme, targetNet, examDate, dailyQuestionGoal, dailyMinuteGoal, notifyReviews] =
+  const [theme, targetNet, examDate, dailyQuestionGoal, dailyMinuteGoal, notifyReviews, onboardDismissed] =
     await Promise.all([
       Store.getMeta("theme"),
       Store.getMeta("targetNet"),
       Store.getMeta("examDate"),
       Store.getMeta("dailyQuestionGoal"),
       Store.getMeta("dailyMinuteGoal"),
-      Store.getMeta("notifyReviews")
+      Store.getMeta("notifyReviews"),
+      Store.getMeta("onboardDismissed")
     ]);
   let normalizedTarget = targetNet == null || targetNet === "" ? null : Number(targetNet);
   if (normalizedTarget != null && !Number.isFinite(normalizedTarget)) normalizedTarget = null;
@@ -74,6 +76,7 @@ export async function hydrate() {
     theme: theme === "light" ? "light" : "dark",
     dailyQuestionGoal: normNumMeta(dailyQuestionGoal),
     dailyMinuteGoal: normNumMeta(dailyMinuteGoal),
-    notifyReviews: notifyReviews === true
+    notifyReviews: notifyReviews === true,
+    onboardDismissed: onboardDismissed === true
   };
 }

@@ -18,6 +18,7 @@ import {
   fillSessTopics
 } from "./features/books.js";
 import { addTrial, deleteTrial, tagTrialTopicsEarly, recalcNet } from "./features/trials.js";
+import { switchAnalyticsTab } from "./features/analytics.js";
 import { generalPhotoImporter, subjectPhotoImporter } from "./features/photoImport.js";
 import {
   addSubjectTrial,
@@ -39,7 +40,9 @@ import {
   toggleNotifyReviews,
   exportData,
   importData,
-  clearAll
+  clearAll,
+  dismissOnboarding,
+  showOnboarding
 } from "./features/settings.js";
 import { TagGame } from "./tagGame.js";
 import { Auth } from "./auth.js";
@@ -77,10 +80,13 @@ const ACTIONS = {
   saveDailyGoals: () => saveDailyGoals(),
   toggleNotifyReviews: () => toggleNotifyReviews(),
   exportData: () => exportData(),
+  dismissOnboarding: () => dismissOnboarding(),
+  showOnboarding: () => showOnboarding(),
   importTrigger: () => $("importFile") && $("importFile").click(),
   clearAll: () => clearAll(),
   tagCancel: () => TagGame.cancel(),
-  tagSkip: () => TagGame.skip()
+  tagSkip: () => TagGame.skip(),
+  anlTab: (el) => switchAnalyticsTab(el.dataset.tab)
 };
 
 // Dynamic row buttons: data-act -> handler reading data attributes.
@@ -136,5 +142,5 @@ export function setupEventListeners() {
   on("subjYanlis", "input", recalcSubjectNet);
   on("subjTrialSection", "change", onSubjSectionChange);
 
-  window.addEventListener("hashchange", () => nav(location.hash.replace("#", "") || "konu"));
+  window.addEventListener("hashchange", () => nav(location.hash.replace("#", "")));
 }

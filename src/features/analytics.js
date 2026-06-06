@@ -162,6 +162,21 @@ export function renderAnalytics() {
   renderAchievements();
 }
 
+/**
+ * Switch the active Analiz sub-tab. Charts are responsive, so we re-render
+ * after revealing the panel to guarantee canvases that were laid out while
+ * hidden (0px) get correct dimensions.
+ */
+export function switchAnalyticsTab(tab) {
+  const panels = document.querySelectorAll("[data-anlpanel]");
+  if (!panels.length) return;
+  panels.forEach((p) => p.classList.toggle("active", p.dataset.anlpanel === tab));
+  document
+    .querySelectorAll("#anlTabs .subtab")
+    .forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+  renderAnalytics();
+}
+
 function renderCountdown() {
   const ed = DB.settings.examDate;
   const el = $("cdDays");
@@ -378,7 +393,7 @@ function renderMastery(sessions, trials, subjectTrials) {
     .sort((a, b) => a.score - b.score);
   const el = $("mastery");
   if (!items.length) {
-    el.innerHTML = '<div class="empty">Henüz yeterli veri yok. Yanlış kaydı veya deneme ekle.</div>';
+    el.innerHTML = '<div class="empty">Henüz yeterli veri yok. Bir deneme ekleyince zayıf konuların burada listelenir.<div class="empty-cta"><button type="button" class="btn sm" data-page="deneme">Deneme ekle</button></div></div>';
     return;
   }
   el.innerHTML = items

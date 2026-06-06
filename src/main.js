@@ -2,13 +2,13 @@
    KPSS Çalışma Paneli — application bootstrap.
    ============================================================ */
 import "./styles.css";
-import { APP_BUILD, PAGES, setActiveProfile } from "./config.js";
+import { APP_BUILD, PAGES, DEFAULT_PAGE, setActiveProfile } from "./config.js";
 import { Store } from "./store.js";
 import { hydrate, DB } from "./state.js";
 import { runAuthGate } from "./auth.js";
 import { $, toast, todayStr } from "./utils.js";
 import { applyTheme } from "./theme.js";
-import { nav, registerPageRenderer } from "./nav.js";
+import { nav, registerPageRenderer, renderNav } from "./nav.js";
 import { initTagGame } from "./tagGame.js";
 import { fillLessonSelect } from "./features/books.js";
 import { buildTrialForm, updateTrialTagDraftHint } from "./features/trials.js";
@@ -16,6 +16,7 @@ import { fillSubjectTrialSection } from "./features/subjectTrials.js";
 import { fillRevLessonSelect, renderReviews, maybeNotifyDueReviews } from "./features/reviews.js";
 import { renderAnalytics } from "./features/analytics.js";
 import { updateSessWrongHint } from "./features/books.js";
+import { renderOnboarding } from "./features/settings.js";
 import { refreshAll } from "./refresh.js";
 import { setupEventListeners } from "./actions.js";
 
@@ -37,6 +38,7 @@ async function init() {
   setupAccountBar(account, profile);
   document.title = `${account.name} · KPSS Paneli`;
 
+  renderNav();
   setupEventListeners();
   registerPageRenderer("analiz", renderAnalytics);
   registerPageRenderer("tekrar", renderReviews);
@@ -81,8 +83,9 @@ async function init() {
   if (tagOv && tagOv.parentElement !== document.body) document.body.appendChild(tagOv);
 
   refreshAll();
+  renderOnboarding();
   const start = location.hash.replace("#", "");
-  nav(PAGES.includes(start) ? start : "konu");
+  nav(PAGES.includes(start) ? start : DEFAULT_PAGE);
 
   maybeNotifyDueReviews();
 }

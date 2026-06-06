@@ -108,7 +108,30 @@ export const REASON_META = [
 
 export const REVIEW_INTERVALS = [1, 3, 7, 14, 30]; // gün
 
-export const PAGES = ["konu", "deneme", "alan", "analiz", "tekrar", "ayarlar"];
+/* ---------------------------------------------------------------
+   NAVIGATION — single source of truth for the sidebar. Order here
+   is the order shown. `group` clusters items under a heading; null
+   means the item sits in the bottom (footer-adjacent) area. `ic` is
+   the small monogram shown in the icon slot. `badge` is the id of a
+   live counter span rendered inside the button.
+
+   Wrong-question classification is the core feature, so the deneme
+   pages lead; progress/tracking follows.
+   --------------------------------------------------------------- */
+export const NAV_ITEMS = [
+  { page: "deneme",  label: "Genel Denemeler", ic: "GD", group: "Yanlış Analizi" },
+  { page: "alan",    label: "Alan Denemeleri", ic: "AD", group: "Yanlış Analizi" },
+  { page: "konu",    label: "Konu Testleri",   ic: "KT", group: "Yanlış Analizi" },
+  { page: "analiz",  label: "Analiz",          ic: "AN", group: "İlerleme" },
+  { page: "tekrar",  label: "Tekrar",          ic: "TK", group: "İlerleme", badge: "revBadge" },
+  { page: "ayarlar", label: "Ayarlar",         ic: "AY", group: null }
+];
+
+/** Page keys, derived from NAV_ITEMS so order/membership stays in one place. */
+export const PAGES = NAV_ITEMS.map((i) => i.page);
+
+/** Landing page when none is requested via the URL hash. */
+export const DEFAULT_PAGE = "deneme";
 
 /** Penalty applied to a net score per wrong answer (KPSS: 4 wrong cancel 1 correct). */
 export const WRONG_PENALTY = 0.25;

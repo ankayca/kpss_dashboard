@@ -17,9 +17,23 @@ import { TagGame } from "../tagGame.js";
 import { isActive } from "../nav.js";
 import { renderAnalytics } from "./analytics.js";
 import { generalPhotoImporter } from "./photoImport.js";
+import { createStepFlow } from "./stepFlow.js";
 
 // Draft of topic→reason tags created before the trial is saved.
 let trialTopicTagsDraft = null;
+
+// Progressive disclosure: each step appears once the previous is done.
+let stepFlow = null;
+function netEntered() {
+  return SECTION_KEYS.some((k) => {
+    const d = $("dogru_" + k);
+    const y = $("yanlis_" + k);
+    return (d && d.value !== "") || (y && y.value !== "");
+  });
+}
+function updateSteps() {
+  if (stepFlow) stepFlow.update();
+}
 
 /* ---------- Form scaffolding ---------- */
 export function buildTrialForm() {
@@ -37,7 +51,17 @@ export function buildTrialForm() {
   // Wrong topics are no longer marked by hand; the AI confirmation list
   // (rendered into #topicChecks by photoImport) is the single source.
   generalPhotoImporter.renderConfirmList();
+
+  const stepEl = (n) => document.querySelector(`#page-deneme .step[data-step="${n}"]`);
+  stepFlow = createStepFlow([
+    { el: stepEl(1), gate: netEntered },
+    { el: stepEl(2), gate: () => generalPhotoImporter.hasMatches() },
+    { el: stepEl(3), gate: () => generalPhotoImporter.hasMatches() },
+    { el: stepEl(4) }
+  ]);
+  generalPhotoImporter.setOnChange(updateSteps);
   recalcNet();
+  updateSteps();
 }
 
 export function recalcNet() {
@@ -50,6 +74,7 @@ export function recalcNet() {
     total += net;
   });
   $("netTotal").textContent = "Toplam: " + total.toFixed(2) + " net";
+  updateSteps();
 }
 
 function getCheckedTrialTopics() {
@@ -186,7 +211,7 @@ export function renderTrials() {
   const tbl = $("trialTable");
   const trials = [...DB.trials].sort((a, b) => b.date.localeCompare(a.date));
   if (!trials.length) {
-    tbl.innerHTML = '<tbody><tr><td><div class="empty">Henüz deneme yok.</div></td></tr></tbody>';
+    tbl.innerHTML = '<tbody><tr><td><div class="empty">Henüz deneme yok. Yukarıdaki adımları izleyerek ilk denemeni ekle.</div></td></tr></tbody>';
     $("trialSummary").textContent = "";
     return;
   }

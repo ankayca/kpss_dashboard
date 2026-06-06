@@ -98,12 +98,7 @@
     </div>
     <button class="logout-btn" id="logoutBtn" data-action="logout" type="button">Çıkış</button>
   </div>
-  <button class="nav-btn active" data-page="konu">Konu Testleri</button>
-  <button class="nav-btn" data-page="deneme">Genel Denemeler</button>
-  <button class="nav-btn" data-page="alan">Alan Denemeleri</button>
-  <button class="nav-btn" data-page="analiz">Analiz</button>
-  <button class="nav-btn" data-page="tekrar">Tekrar <span class="badge" id="revBadge">0</span></button>
-  <button class="nav-btn" data-page="ayarlar">Ayarlar</button>
+  <nav class="nav-list" id="navList"></nav>
   <div class="sidebar-foot">
     <button class="theme-btn" id="themeBtn" data-action="toggleTheme">Koyu tema</button>
     <div class="build-tag" id="buildTag">Tema: Siyah / Kırmızı</div>
@@ -113,42 +108,48 @@
 <main class="main">
 
   <!-- ============ KONU TESTLERİ ============ -->
-  <section class="page active" id="page-konu">
+  <section class="page" id="page-konu">
     <div class="page-head">
       <div>
-        <h1>Konu Testleri Takibi</h1>
+        <h1>Konu Testleri</h1>
         <p>Kitap/fasiküllerindeki yanlışları ders ve konu bazlı takip et.</p>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Kitap / Fasikül Ekle</h2>
-      <div class="sub">Kitabın hangi KPSS dersine ait olduğunu seç — konular o derse göre hazır gelir.</div>
-      <div class="form-row">
-        <div class="field" style="flex:2"><label>Kitap adı</label><input type="text" id="bookName" placeholder="İsem Tarih Fasikülleri" /></div>
-        <div class="field"><label>Ders</label><select id="bookLesson"></select></div>
-        <div class="field" style="display:flex; align-items:flex-end;"><button class="btn" data-action="addBook">Ekle</button></div>
+    <div class="card stepper">
+      <div class="step" data-step="1">
+        <div class="step-marker">1</div>
+        <div class="step-body">
+          <div class="step-head"><div class="step-title">Kitap / fasikül ekle</div></div>
+          <div class="form-row">
+            <div class="field" style="flex:2"><label>Kitap adı</label><input type="text" id="bookName" placeholder="İsem Tarih Fasikülleri" /></div>
+            <div class="field"><label>Ders</label><select id="bookLesson"></select></div>
+            <div class="field" style="display:flex; align-items:flex-end;"><button class="btn" data-action="addBook">Ekle</button></div>
+          </div>
+          <div id="bookList" style="margin-top:8px"></div>
+        </div>
       </div>
-      <div id="bookList" style="margin-top:8px"></div>
-    </div>
 
-    <div class="card">
-      <h2>Yanlış Kaydı Gir</h2>
-      <div class="sub">Yanlış soru numaralarını gir.</div>
-      <div class="form-row">
-        <div class="field"><label>Tarih</label><input type="date" id="sessDate" /></div>
-        <div class="field"><label>Kitap</label><select id="sessBook"></select></div>
-        <div class="field" style="flex:2"><label>Konu</label><select id="sessTopic"></select></div>
-      </div>
-      <div class="form-row">
-        <div class="field" style="max-width:140px"><label>Toplam soru</label><input type="number" id="sessTotal" placeholder="20" min="1" /></div>
-        <div class="field" style="max-width:140px"><label>Süre (dk, ops.)</label><input type="number" id="sessDuration" placeholder="25" min="0" /></div>
-        <div class="field" style="flex:2"><label>Yanlış sorular</label><input type="text" id="sessWrong" placeholder="3, 7, 12" /></div>
-      </div>
-      <div class="sub" id="sessWrongHint" style="margin:-6px 0 12px;color:var(--accent-2)"></div>
-      <div class="btn-row">
-        <button type="button" class="btn" data-action="addSession">Kaydet</button>
-        <button type="button" class="btn ghost sm" data-action="saveSessionPerfect">Tam puan (yanlış yok)</button>
+      <div class="step locked" data-step="2">
+        <div class="step-marker">2</div>
+        <div class="step-body">
+          <div class="step-head"><div class="step-title">Yanlış kaydı gir</div></div>
+          <div class="form-row">
+            <div class="field"><label>Tarih</label><input type="date" id="sessDate" /></div>
+            <div class="field"><label>Kitap</label><select id="sessBook"></select></div>
+            <div class="field" style="flex:2"><label>Konu</label><select id="sessTopic"></select></div>
+          </div>
+          <div class="form-row">
+            <div class="field" style="max-width:140px"><label>Toplam soru</label><input type="number" id="sessTotal" placeholder="20" min="1" /></div>
+            <div class="field" style="max-width:140px"><label>Süre (dk, ops.)</label><input type="number" id="sessDuration" placeholder="25" min="0" /></div>
+            <div class="field" style="flex:2"><label>Yanlış sorular</label><input type="text" id="sessWrong" placeholder="3, 7, 12" /></div>
+          </div>
+          <div class="sub" id="sessWrongHint" style="margin:-6px 0 12px;color:var(--accent-2)"></div>
+          <div class="btn-row">
+            <button type="button" class="btn" data-action="addSession">Kaydet</button>
+            <button type="button" class="btn ghost sm" data-action="saveSessionPerfect">Tam puan (yanlış yok)</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -160,67 +161,91 @@
   </section>
 
   <!-- ============ GENEL DENEMELER ============ -->
-  <section class="page" id="page-deneme">
+  <section class="page active" id="page-deneme">
     <div class="page-head">
       <div>
-        <h1>Genel Deneme Takibi</h1>
-        <p>Doğru/yanlış sayılarını gir, netler otomatik hesaplansın.</p>
+        <h1>Genel Denemeler</h1>
+        <p>Deneme sonucunu gir, fotoğraftan yanlış konularını çıkar ve sebebini etiketle.</p>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Yeni Deneme Ekle</h2>
-      <div class="sub">Her bölüm için doğru (D) ve yanlış (Y) sayısını gir. Net = D − Y×0,25.</div>
-      <div class="form-row">
-        <div class="field"><label>Tarih</label><input type="date" id="trialDate" /></div>
-        <div class="field"><label>Süre (dakika)</label><input type="number" id="trialDuration" placeholder="135" min="0" /></div>
+    <div class="onboard" data-onboard>
+      <button type="button" class="onboard-close" data-action="dismissOnboarding" aria-label="Tanıtımı kapat">✕</button>
+      <div class="onboard-title">Nasıl çalışır?</div>
+      <div class="onboard-steps">
+        <div class="onboard-step"><span class="onboard-num">1</span><span>Deneme sonucunu gir <strong>veya</strong> sayfanın fotoğrafını yükle.</span></div>
+        <div class="onboard-step"><span class="onboard-num">2</span><span>AI, yanlış sorularını otomatik olarak konularla eşleştirir.</span></div>
+        <div class="onboard-step"><span class="onboard-num">3</span><span>Sebebini etiketle — <strong>Analiz</strong>'de zayıf konularını gör.</span></div>
       </div>
-      <label>Net girişi</label>
-      <div id="netInputs"></div>
-      <div id="netTotal">Toplam: 0.00 net</div>
+    </div>
 
-      <div class="photo-import">
-        <div style="font-weight:700; font-size:14px;">Fotoğraftan yanlış konu çıkar (AI)</div>
-        <div class="sub">Deneme sayfasının fotoğrafını yükle ve yanlış soru numaralarını yaz; AI bulduğu yanlış soru → konu eşleşmelerini aşağıda onayına sunar.</div>
-        <div class="field" id="photoBookletField">
-          <label>Kitapçık / oturum</label>
-          <select id="photoBooklet"></select>
-          <div class="sub" style="margin-top:4px">Her kitapçık 1'den başladığı için fotoğrafları kitapçık kitapçık ekle: önce birini bul-işaretle, sonra diğerine geç.</div>
-        </div>
-        <div class="field">
-          <label>Sayfa fotoğrafı</label>
-          <div id="photoDrop" class="photo-drop" role="button" tabindex="0" aria-label="Fotoğraf ekle">
-            <div class="photo-drop-ico">🖼️</div>
-            <div class="photo-drop-text">
-              <strong>Fotoğrafları buraya sürükle</strong>
-              <span>ya da dosya seçmek için tıkla</span>
-            </div>
-            <button type="button" class="btn ghost sm photo-cam-btn" data-action="photoCamera">📷 Fotoğraf çek</button>
+    <div class="card stepper">
+      <div class="step" data-step="1">
+        <div class="step-marker">1</div>
+        <div class="step-body">
+          <div class="step-head"><div class="step-title">Deneme bilgisi</div></div>
+          <div class="form-row">
+            <div class="field"><label>Tarih</label><input type="date" id="trialDate" /></div>
+            <div class="field"><label>Süre (dakika)</label><input type="number" id="trialDuration" placeholder="135" min="0" /></div>
           </div>
-          <input type="file" id="photoFile" accept="image/*" multiple hidden />
-          <input type="file" id="photoCam" accept="image/*" capture="environment" hidden />
-        </div>
-        <div class="field"><label>Yanlış sorular</label><input type="text" id="photoWrong" placeholder="3, 7, 12" /></div>
-        <div id="photoThumbs" class="photo-thumbs"></div>
-        <div class="btn-row" style="margin-top:8px">
-          <button type="button" class="btn sm" id="photoClassifyBtn" data-action="runPhotoClassify">Konuları bul (AI)</button>
-          <span class="sub" id="photoStatus" style="margin:0"></span>
+          <label>Net girişi</label>
+          <div id="netInputs"></div>
+          <div id="netTotal">Toplam: 0.00 net</div>
         </div>
       </div>
 
-      <div style="margin: 14px 0 4px; font-weight:700; font-size:14px;">Yanlış Konular — onay</div>
-      <div class="sub">AI'nın bulduğu yanlış soru → konu eşleşmeleri. Doğru olanları işaretli bırak, hatalı olanların işaretini kaldır. Kaydederken işaretli her konu için sebep etiketlersin.</div>
-      <div class="btn-row" style="margin:6px 0 10px">
-        <button type="button" class="btn ghost sm" data-action="clearPhotoResults">Listeyi temizle</button>
-        <span class="sub" id="photoConfirmHint" style="margin:0"></span>
+      <div class="step step-hero locked" data-step="2">
+        <div class="step-marker">2</div>
+        <div class="step-body">
+          <div class="step-head"><div class="step-title">Fotoğraftan yanlışları bul <span class="step-tag">AI</span></div></div>
+          <div class="field" id="photoBookletField">
+            <label>Kitapçık / oturum</label>
+            <select id="photoBooklet"></select>
+          </div>
+          <div class="field">
+            <div id="photoDrop" class="photo-drop" role="button" tabindex="0" aria-label="Fotoğraf ekle">
+              <div class="photo-drop-ico">🖼️</div>
+              <div class="photo-drop-text">
+                <strong>Fotoğrafları buraya sürükle</strong>
+                <span>ya da dosya seçmek için tıkla</span>
+              </div>
+              <button type="button" class="btn ghost sm photo-cam-btn" data-action="photoCamera">📷 Fotoğraf çek</button>
+            </div>
+            <input type="file" id="photoFile" accept="image/*" multiple hidden />
+            <input type="file" id="photoCam" accept="image/*" capture="environment" hidden />
+          </div>
+          <div class="field"><label>Yanlış sorular</label><input type="text" id="photoWrong" placeholder="3, 7, 12" /></div>
+          <div id="photoThumbs" class="photo-thumbs"></div>
+          <div class="btn-row" style="margin-top:8px">
+            <button type="button" class="btn sm" id="photoClassifyBtn" data-action="runPhotoClassify">Konuları bul (AI)</button>
+            <span class="sub" id="photoStatus" style="margin:0"></span>
+          </div>
+        </div>
       </div>
-      <div id="topicChecks"></div>
 
-      <div class="field" style="margin-top:8px">
-        <label>Notlar</label>
-        <textarea id="trialNotes" placeholder="Süre yetmedi, paragrafta yavaş kaldım..."></textarea>
+      <div class="step locked" data-step="3">
+        <div class="step-marker">3</div>
+        <div class="step-body">
+          <div class="step-head"><div class="step-title">Yanlış konuları onayla</div></div>
+          <div class="btn-row" style="margin:0 0 10px">
+            <button type="button" class="btn ghost sm" data-action="clearPhotoResults">Listeyi temizle</button>
+            <span class="sub" id="photoConfirmHint" style="margin:0"></span>
+          </div>
+          <div id="topicChecks"></div>
+        </div>
       </div>
-      <button type="button" class="btn" data-action="addTrial">Kaydet → Konu sebeplerini etiketle</button>
+
+      <div class="step locked" data-step="4">
+        <div class="step-marker">4</div>
+        <div class="step-body">
+          <div class="step-head"><div class="step-title">Kaydet</div></div>
+          <div class="field">
+            <label>Notlar (ops.)</label>
+            <textarea id="trialNotes" placeholder="Süre yetmedi, paragrafta yavaş kaldım..."></textarea>
+          </div>
+          <button type="button" class="btn" data-action="addTrial">Kaydet → sebepleri etiketle</button>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -234,62 +259,77 @@
   <section class="page" id="page-alan">
     <div class="page-head">
       <div>
-        <h1>Alan Denemesi Takibi</h1>
-        <p>Tek bir dersin denemesini gir; net otomatik hesaplansın, yanlış konularını sebebiyle işaretle.</p>
+        <h1>Alan Denemeleri</h1>
+        <p>Tek bir dersin denemesini gir, fotoğraftan yanlış konularını çıkar ve sebebiyle etiketle.</p>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Yeni Alan Denemesi Ekle</h2>
-      <div class="sub">Dersi seç, doğru (D) ve yanlış (Y) sayısını gir. Net = D − Y×0,25.</div>
-      <div class="form-row">
-        <div class="field"><label>Tarih</label><input type="date" id="subjTrialDate" /></div>
-        <div class="field"><label>Ders</label><select id="subjTrialSection"></select></div>
-        <div class="field"><label>Süre (dakika)</label><input type="number" id="subjTrialDuration" placeholder="40" min="0" /></div>
-      </div>
-      <div class="form-row">
-        <div class="field" style="max-width:140px"><label>Doğru</label><input type="number" id="subjDogru" placeholder="D" min="0" /></div>
-        <div class="field" style="max-width:140px"><label>Yanlış</label><input type="number" id="subjYanlis" placeholder="Y" min="0" /></div>
-        <div class="field" style="display:flex; align-items:flex-end;"><div id="subjNetVal" class="net-val">0.00 net</div></div>
-      </div>
-
-      <div class="photo-import">
-        <div style="font-weight:700; font-size:14px;">Fotoğraftan yanlış konu çıkar (AI)</div>
-        <div class="sub">Alan denemesi sayfasının fotoğrafını yükle ve yanlış soru numaralarını yaz; AI, seçtiğin dersin konularıyla eşleştirip aşağıda onayına sunar.</div>
-        <div class="field">
-          <label>Sayfa fotoğrafı</label>
-          <div id="subjPhotoDrop" class="photo-drop" role="button" tabindex="0" aria-label="Fotoğraf ekle">
-            <div class="photo-drop-ico">🖼️</div>
-            <div class="photo-drop-text">
-              <strong>Fotoğrafları buraya sürükle</strong>
-              <span>ya da dosya seçmek için tıkla</span>
-            </div>
-            <button type="button" class="btn ghost sm photo-cam-btn" data-action="subjPhotoCamera">📷 Fotoğraf çek</button>
+    <div class="card stepper">
+      <div class="step" data-step="1">
+        <div class="step-marker">1</div>
+        <div class="step-body">
+          <div class="step-head"><div class="step-title">Deneme bilgisi</div></div>
+          <div class="form-row">
+            <div class="field"><label>Tarih</label><input type="date" id="subjTrialDate" /></div>
+            <div class="field"><label>Ders</label><select id="subjTrialSection"></select></div>
+            <div class="field"><label>Süre (dakika)</label><input type="number" id="subjTrialDuration" placeholder="40" min="0" /></div>
           </div>
-          <input type="file" id="subjPhotoFile" accept="image/*" multiple hidden />
-          <input type="file" id="subjPhotoCam" accept="image/*" capture="environment" hidden />
-        </div>
-        <div class="field"><label>Yanlış sorular</label><input type="text" id="subjPhotoWrong" placeholder="3, 7, 12" /></div>
-        <div id="subjPhotoThumbs" class="photo-thumbs"></div>
-        <div class="btn-row" style="margin-top:8px">
-          <button type="button" class="btn sm" id="subjPhotoClassifyBtn" data-action="runSubjPhotoClassify">Konuları bul (AI)</button>
-          <span class="sub" id="subjPhotoStatus" style="margin:0"></span>
+          <div class="form-row">
+            <div class="field" style="max-width:140px"><label>Doğru</label><input type="number" id="subjDogru" placeholder="D" min="0" /></div>
+            <div class="field" style="max-width:140px"><label>Yanlış</label><input type="number" id="subjYanlis" placeholder="Y" min="0" /></div>
+            <div class="field" style="display:flex; align-items:flex-end;"><div id="subjNetVal" class="net-val">0.00 net</div></div>
+          </div>
         </div>
       </div>
 
-      <div style="margin: 14px 0 4px; font-weight:700; font-size:14px;">Yanlış Konular — onay</div>
-      <div class="sub">AI'nın bulduğu yanlış soru → konu eşleşmeleri. Doğru olanları işaretli bırak, hatalı olanların işaretini kaldır. Kaydederken işaretli her konu için sebep etiketlersin.</div>
-      <div class="btn-row" style="margin:6px 0 10px">
-        <button type="button" class="btn ghost sm" data-action="clearSubjPhotoResults">Listeyi temizle</button>
-        <span class="sub" id="subjPhotoConfirmHint" style="margin:0"></span>
+      <div class="step step-hero locked" data-step="2">
+        <div class="step-marker">2</div>
+        <div class="step-body">
+          <div class="step-head"><div class="step-title">Fotoğraftan yanlışları bul <span class="step-tag">AI</span></div></div>
+          <div class="field">
+            <div id="subjPhotoDrop" class="photo-drop" role="button" tabindex="0" aria-label="Fotoğraf ekle">
+              <div class="photo-drop-ico">🖼️</div>
+              <div class="photo-drop-text">
+                <strong>Fotoğrafları buraya sürükle</strong>
+                <span>ya da dosya seçmek için tıkla</span>
+              </div>
+              <button type="button" class="btn ghost sm photo-cam-btn" data-action="subjPhotoCamera">📷 Fotoğraf çek</button>
+            </div>
+            <input type="file" id="subjPhotoFile" accept="image/*" multiple hidden />
+            <input type="file" id="subjPhotoCam" accept="image/*" capture="environment" hidden />
+          </div>
+          <div class="field"><label>Yanlış sorular</label><input type="text" id="subjPhotoWrong" placeholder="3, 7, 12" /></div>
+          <div id="subjPhotoThumbs" class="photo-thumbs"></div>
+          <div class="btn-row" style="margin-top:8px">
+            <button type="button" class="btn sm" id="subjPhotoClassifyBtn" data-action="runSubjPhotoClassify">Konuları bul (AI)</button>
+            <span class="sub" id="subjPhotoStatus" style="margin:0"></span>
+          </div>
+        </div>
       </div>
-      <div id="subjTopicChecks"></div>
 
-      <div class="field" style="margin-top:8px">
-        <label>Notlar</label>
-        <textarea id="subjTrialNotes" placeholder="Geometride zorlandım, paragrafta yavaş kaldım..."></textarea>
+      <div class="step locked" data-step="3">
+        <div class="step-marker">3</div>
+        <div class="step-body">
+          <div class="step-head"><div class="step-title">Yanlış konuları onayla</div></div>
+          <div class="btn-row" style="margin:0 0 10px">
+            <button type="button" class="btn ghost sm" data-action="clearSubjPhotoResults">Listeyi temizle</button>
+            <span class="sub" id="subjPhotoConfirmHint" style="margin:0"></span>
+          </div>
+          <div id="subjTopicChecks"></div>
+        </div>
       </div>
-      <button type="button" class="btn" data-action="addSubjectTrial">Kaydet → Konu sebeplerini etiketle</button>
+
+      <div class="step locked" data-step="4">
+        <div class="step-marker">4</div>
+        <div class="step-body">
+          <div class="step-head"><div class="step-title">Kaydet</div></div>
+          <div class="field">
+            <label>Notlar (ops.)</label>
+            <textarea id="subjTrialNotes" placeholder="Geometride zorlandım, paragrafta yavaş kaldım..."></textarea>
+          </div>
+          <button type="button" class="btn" data-action="addSubjectTrial">Kaydet → sebepleri etiketle</button>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -323,126 +363,145 @@
       </div>
     </div>
 
-    <div class="grid cols-5" style="margin-bottom:20px">
-      <div class="stat countdown"><div class="val" id="cdDays">—</div><div class="lbl" id="cdLbl">Sınava kalan gün</div></div>
-      <div class="stat"><div class="val" id="statTrials">0</div><div class="lbl">Toplam deneme</div></div>
-      <div class="stat"><div class="val" id="statBestNet">—</div><div class="lbl">En yüksek toplam net</div></div>
-      <div class="stat"><div class="val" id="statStreak">0</div><div class="lbl">Günlük seri</div></div>
-      <div class="stat"><div class="val" id="statLongest">0</div><div class="lbl">En uzun seri</div></div>
+    <div class="subtabs" id="anlTabs">
+      <button type="button" class="subtab active" data-action="anlTab" data-tab="ozet">Özet</button>
+      <button type="button" class="subtab" data-action="anlTab" data-tab="gelisim">Gelişim</button>
+      <button type="button" class="subtab" data-action="anlTab" data-tab="konular">Konular</button>
+      <button type="button" class="subtab" data-action="anlTab" data-tab="sebepler">Sebepler</button>
     </div>
 
-    <div class="card">
-      <h2>Günlük Hedef</h2>
-      <div class="sub">Bugünkü çözülen soru ve çalışma süresi. Hedefleri Ayarlar'dan belirle.</div>
-      <div id="goalRings" class="goal-rings"></div>
-    </div>
-
-    <div class="card">
-      <h2>Hedef ve tempo</h2>
-      <div class="sub">Hedef netine ulaşmak için günlük gereken artış. Hedefi Ayarlar'dan belirle.</div>
-      <div id="paceBox"></div>
-      <div id="predictBox" class="predict-box"></div>
-    </div>
-
-    <div class="card">
-      <h2>Bu Hafta vs Geçen Hafta</h2>
-      <div class="sub">Pazartesi'den bugüne karşılaştırma. Momentumunu koru!</div>
-      <div id="weeklyCompare" class="week-grid"></div>
-    </div>
-
-    <div class="card">
-      <h2>Çalışma takvimi</h2>
-      <div class="sub">Yanlış kaydı, deneme veya tekrar yaptığın günler. Seriyi koru!</div>
-      <div id="streakInfo" class="sub"></div>
-      <div class="hm-wrap"><div id="heatmap"></div></div>
-      <div class="hm-legend">Az <span class="hm-cell"></span><span class="hm-cell l1"></span><span class="hm-cell l2"></span><span class="hm-cell l3"></span> Çok</div>
-    </div>
-
-    <div class="grid cols-2">
-      <div class="card">
-        <h2>Toplam Net Gelişimi</h2>
-        <div class="sub">Denemeler boyunca toplam net</div>
-        <canvas id="chartTrend" height="220"></canvas>
-        <div class="empty" id="trendEmpty" style="display:none">Henüz deneme yok.</div>
+    <!-- ÖZET -->
+    <div class="tab-panel active" data-anlpanel="ozet">
+      <div class="grid cols-5" style="margin-bottom:20px">
+        <div class="stat countdown"><div class="val" id="cdDays">—</div><div class="lbl" id="cdLbl">Sınava kalan gün</div></div>
+        <div class="stat"><div class="val" id="statTrials">0</div><div class="lbl">Toplam deneme</div></div>
+        <div class="stat"><div class="val" id="statBestNet">—</div><div class="lbl">En yüksek toplam net</div></div>
+        <div class="stat"><div class="val" id="statStreak">0</div><div class="lbl">Günlük seri</div></div>
+        <div class="stat"><div class="val" id="statLongest">0</div><div class="lbl">En uzun seri</div></div>
       </div>
+
       <div class="card">
-        <h2>Bölüm Bazlı Ortalama Net</h2>
-        <div class="sub">Tüm denemelerin bölüm ortalaması</div>
-        <canvas id="chartSection" height="220"></canvas>
-        <div class="empty" id="sectionEmpty" style="display:none">Henüz deneme yok.</div>
+        <h2>Günlük Hedef</h2>
+        <div class="sub">Bugünkü çözülen soru ve çalışma süresi. Hedefleri Ayarlar'dan belirle.</div>
+        <div id="goalRings" class="goal-rings"></div>
+      </div>
+
+      <div class="card">
+        <h2>Hedef ve tempo</h2>
+        <div class="sub">Hedef netine ulaşmak için günlük gereken artış. Hedefi Ayarlar'dan belirle.</div>
+        <div id="paceBox"></div>
+        <div id="predictBox" class="predict-box"></div>
+      </div>
+
+      <div class="card">
+        <h2>Bu Hafta vs Geçen Hafta</h2>
+        <div class="sub">Pazartesi'den bugüne karşılaştırma. Momentumunu koru!</div>
+        <div id="weeklyCompare" class="week-grid"></div>
+      </div>
+
+      <div class="card">
+        <h2>Çalışma takvimi</h2>
+        <div class="sub">Yanlış kaydı, deneme veya tekrar yaptığın günler. Seriyi koru!</div>
+        <div id="streakInfo" class="sub"></div>
+        <div class="hm-wrap"><div id="heatmap"></div></div>
+        <div class="hm-legend">Az <span class="hm-cell"></span><span class="hm-cell l1"></span><span class="hm-cell l2"></span><span class="hm-cell l3"></span> Çok</div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Bölüm Net Trendi</h2>
-      <div class="sub">Her bölümün denemeler boyunca net değişimi</div>
-      <canvas id="chartSectionTrend" height="200"></canvas>
-      <div class="empty" id="sectionTrendEmpty" style="display:none">Henüz deneme yok.</div>
-    </div>
-
-    <div class="card">
-      <h2>Haftalık Çalışma Süresi</h2>
-      <div class="sub">Denemeler ve konu testlerinde kaydettiğin süre (dakika), haftalık toplam</div>
-      <canvas id="chartStudyTime" height="200"></canvas>
-      <div class="empty" id="studyTimeEmpty" style="display:none">Henüz süre kaydı yok. Deneme/konu testi eklerken süre gir.</div>
-    </div>
-
-    <div class="grid cols-2">
-      <div class="card">
-        <h2>Konu Testi Başarı Trendi</h2>
-        <div class="sub">Konu testlerinde haftalık doğruluk yüzdesi</div>
-        <canvas id="chartKonuTrend" height="200"></canvas>
-        <div class="empty" id="konuTrendEmpty" style="display:none">Henüz konu testi yok.</div>
+    <!-- GELİŞİM -->
+    <div class="tab-panel" data-anlpanel="gelisim">
+      <div class="grid cols-2">
+        <div class="card">
+          <h2>Toplam Net Gelişimi</h2>
+          <div class="sub">Denemeler boyunca toplam net</div>
+          <canvas id="chartTrend" height="220"></canvas>
+          <div class="empty" id="trendEmpty" style="display:none">Henüz deneme yok.</div>
+        </div>
+        <div class="card">
+          <h2>Bölüm Bazlı Ortalama Net</h2>
+          <div class="sub">Tüm denemelerin bölüm ortalaması</div>
+          <canvas id="chartSection" height="220"></canvas>
+          <div class="empty" id="sectionEmpty" style="display:none">Henüz deneme yok.</div>
+        </div>
       </div>
+
       <div class="card">
-        <h2>Yanlış Sebep Trendi</h2>
-        <div class="sub">Sebeplerin haftalara göre değişimi — "Dikkatsizlik azalıyor mu?"</div>
-        <canvas id="chartReasonTrend" height="200"></canvas>
-        <div class="empty" id="reasonTrendEmpty" style="display:none">Henüz sebep etiketi yok.</div>
+        <h2>Bölüm Net Trendi</h2>
+        <div class="sub">Her bölümün denemeler boyunca net değişimi</div>
+        <canvas id="chartSectionTrend" height="200"></canvas>
+        <div class="empty" id="sectionTrendEmpty" style="display:none">Henüz deneme yok.</div>
+      </div>
+
+      <div class="card">
+        <h2>Haftalık Çalışma Süresi</h2>
+        <div class="sub">Denemeler ve konu testlerinde kaydettiğin süre (dakika), haftalık toplam</div>
+        <canvas id="chartStudyTime" height="200"></canvas>
+        <div class="empty" id="studyTimeEmpty" style="display:none">Henüz süre kaydı yok. Deneme/konu testi eklerken süre gir.</div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="card">
+          <h2>Konu Testi Başarı Trendi</h2>
+          <div class="sub">Konu testlerinde haftalık doğruluk yüzdesi</div>
+          <canvas id="chartKonuTrend" height="200"></canvas>
+          <div class="empty" id="konuTrendEmpty" style="display:none">Henüz konu testi yok.</div>
+        </div>
+        <div class="card">
+          <h2>Yanlış Sebep Trendi</h2>
+          <div class="sub">Sebeplerin haftalara göre değişimi — "Dikkatsizlik azalıyor mu?"</div>
+          <canvas id="chartReasonTrend" height="200"></canvas>
+          <div class="empty" id="reasonTrendEmpty" style="display:none">Henüz sebep etiketi yok.</div>
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Konu Hâkimiyeti</h2>
-      <div class="sub">Konu testi doğruluğun + denemelerde işaretlediğin yanlışlardan hesaplanan hâkimiyet skoru (en zayıf üstte). "Tekrara ekle" ile tekrar kuyruğuna al.</div>
-      <div id="mastery"><div class="empty">Henüz yeterli veri yok.</div></div>
-    </div>
-
-    <div class="grid cols-2">
-      <div class="card">
-        <h2>Denemelerde İşaretlenen Yanlış Konular</h2>
-        <div class="sub">Genel denemelerde işaretlediğin konuların sıklığı</div>
-        <div id="trialTopicFreq"><div class="empty">Henüz veri yok.</div></div>
+    <!-- KONULAR -->
+    <div class="tab-panel" data-anlpanel="konular">
+      <div class="card" style="border-color: rgba(var(--rose-rgb),.4)">
+        <h2 style="color:var(--red)">Kesişen zayıf konular — önce bunlara çalış</h2>
+        <div class="sub">Hem konu testlerinde hem genel denemelerde sorun yaşadığın konular — öncelik ver!</div>
+        <div id="intersection"><div class="empty">Henüz kesişim tespit edilmedi.</div></div>
       </div>
+
       <div class="card">
-        <h2>Konu Testi Yanlış Yoğunluğu</h2>
-        <div class="sub">Konu testlerinde konu başına biriken yanlış sayısı</div>
-        <div id="konuTopicFreq"><div class="empty">Henüz veri yok.</div></div>
+        <h2>Konu Hâkimiyeti</h2>
+        <div class="sub">Konu testi doğruluğun + denemelerde işaretlediğin yanlışlardan hesaplanan hâkimiyet skoru (en zayıf üstte). "Tekrara ekle" ile tekrar kuyruğuna al.</div>
+        <div id="mastery"><div class="empty">Henüz yeterli veri yok.</div></div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="card">
+          <h2>Denemelerde İşaretlenen Yanlış Konular</h2>
+          <div class="sub">Genel denemelerde işaretlediğin konuların sıklığı</div>
+          <div id="trialTopicFreq"><div class="empty">Henüz veri yok.</div></div>
+        </div>
+        <div class="card">
+          <h2>Konu Testi Yanlış Yoğunluğu</h2>
+          <div class="sub">Konu testlerinde konu başına biriken yanlış sayısı</div>
+          <div id="konuTopicFreq"><div class="empty">Henüz veri yok.</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Alan Denemeleri — Ders Bazlı Ortalama Net</h2>
+        <div class="sub">Tek ders denemelerinde her dersin ortalama neti ve deneme sayısı</div>
+        <div id="subjTrialFreq"><div class="empty">Henüz alan denemesi yok.</div></div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Alan Denemeleri — Ders Bazlı Ortalama Net</h2>
-      <div class="sub">Tek ders denemelerinde her dersin ortalama neti ve deneme sayısı</div>
-      <div id="subjTrialFreq"><div class="empty">Henüz alan denemesi yok.</div></div>
-    </div>
+    <!-- SEBEPLER & BAŞARIMLAR -->
+    <div class="tab-panel" data-anlpanel="sebepler">
+      <div class="card">
+        <h2>Yanlış Sebepleri</h2>
+        <div class="sub">Soru ve konu başına etiketlediğin sebeplerin dağılımı</div>
+        <div id="reasonFreq"><div class="empty">Henüz sebep etiketi yok.</div></div>
+      </div>
 
-    <div class="card">
-      <h2>Yanlış Sebepleri</h2>
-      <div class="sub">Soru ve konu başına etiketlediğin sebeplerin dağılımı</div>
-      <div id="reasonFreq"><div class="empty">Henüz sebep etiketi yok.</div></div>
-    </div>
-
-    <div class="card" style="border-color: rgba(var(--rose-rgb),.4)">
-      <h2 style="color:var(--red)">Kesişen zayıf konular</h2>
-      <div class="sub">Hem konu testlerinde hem genel denemelerde sorun yaşadığın konular — öncelik ver!</div>
-      <div id="intersection"><div class="empty">Henüz kesişim tespit edilmedi.</div></div>
-    </div>
-
-    <div class="card">
-      <h2>Başarımlar</h2>
-      <div class="sub">Çalıştıkça açılan rozetler. Seriyi ve soru sayını artırarak hepsini topla!</div>
-      <div id="achievements" class="badge-grid"></div>
+      <div class="card">
+        <h2>Başarımlar</h2>
+        <div class="sub">Çalıştıkça açılan rozetler. Seriyi ve soru sayını artırarak hepsini topla!</div>
+        <div id="achievements" class="badge-grid"></div>
+      </div>
     </div>
   </section>
 
@@ -530,12 +589,22 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>Görünüm</h2>
-      <div class="sub">Tema tercihini seç.</div>
-      <div class="btn-row">
-        <button class="btn ghost" data-action="setTheme" data-theme="dark">Koyu</button>
-        <button class="btn ghost" data-action="setTheme" data-theme="light">Açık</button>
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>Görünüm</h2>
+        <div class="sub">Tema tercihini seç.</div>
+        <div class="btn-row">
+          <button class="btn ghost" data-action="setTheme" data-theme="dark">Koyu</button>
+          <button class="btn ghost" data-action="setTheme" data-theme="light">Açık</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Tanıtım</h2>
+        <div class="sub">"Nasıl çalışır?" rehberini Genel Denemeler sayfasında yeniden göster.</div>
+        <div class="btn-row">
+          <button class="btn ghost" data-action="showOnboarding">Tanıtımı tekrar göster</button>
+        </div>
       </div>
     </div>
 
