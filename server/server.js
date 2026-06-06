@@ -270,8 +270,24 @@ function buildClassifyPrompt(sections, wrong) {
     .map((s) => `- ${s.key} (${s.label}): ${s.topics.join(" | ")}`)
     .join("\n");
   const wrongList = wrong.length ? wrong.join(", ") : "(fotoğraftaki tüm sorular)";
+
+  // Profile-specific hints: only emit a rule when the topics it references
+  // actually exist in the taxonomy. (e.g. AGS Sayısal Yetenek has no geometry,
+  // so the KPSS geometry mapping must not leak in and mis-route questions.)
+  const allTopics = new Set(sections.flatMap((s) => s.topics.map((t) => normLabel(t))));
+  const has = (t) => allTopics.has(normLabel(t));
+  const hints = [];
+  if (has("Üçgenler") || has("Çokgenler ve Dörtgenler") || has("Çember ve Daire")) {
+    hints.push(
+      "- Geometri/şekil içeren sorular: üçgen → 'Üçgenler'; kare/dikdörtgen/yamuk/paralelkenar/çokgen → 'Çokgenler ve Dörtgenler'; çember/daire/teğet/yay → 'Çember ve Daire'; silindir/küp/prizma/koni/küre/katı cisim → 'Katı Cisimler'; açı → 'Açılar'; koordinat/analitik → 'Analitik Geometri'. Bu soruları ASLA 'Problemler' olarak işaretleme."
+    );
+  }
+  if (has("Problemler")) {
+    hints.push("- 'Problemler' yalnızca sayısal/sözel problem kurma soruları içindir (yaş, işçi, havuz, hız vb.).");
+  }
+
   return [
-    "Bir KPSS deneme sınavı sayfasının fotoğrafı veriliyor (Türkçe).",
+    "Bir deneme sınavı sayfasının fotoğrafı veriliyor (Türkçe).",
     "Görseldeki el yazıları, işaretlemeler ve filigranları yok say; yalnızca basılı soru metnini kullan.",
     "Aşağıdaki ders/konu listesinden YALNIZCA verilen değerleri kullanarak, belirtilen yanlış soru numaralarının her biri için dersi (section anahtarı) ve konuyu eşle.",
     "",
@@ -282,11 +298,10 @@ function buildClassifyPrompt(sections, wrong) {
     "",
     "Kurallar:",
     "- Önce sorunun konusunu belirleyen anahtar ifadeyi (evidence) soru metninden birebir al; sonra konuyu seç.",
-    "- Geometri/şekil içeren sorular: üçgen → 'Üçgenler'; kare/dikdörtgen/yamuk/paralelkenar/çokgen → 'Çokgenler ve Dörtgenler'; çember/daire/teğet/yay → 'Çember ve Daire'; silindir/küp/prizma/koni/küre/katı cisim → 'Katı Cisimler'; açı → 'Açılar'; koordinat/analitik → 'Analitik Geometri'. Bu soruları ASLA 'Problemler' olarak işaretleme.",
-    "- 'Problemler' yalnızca sayısal/sözel problem kurma soruları içindir (yaş, işçi, havuz, hız vb.).",
-    "- section değeri yukarıdaki anahtarlardan biri olmalı (ör. matematik, tarih).",
+    ...hints,
+    "- section ve topic değerleri YALNIZCA yukarıdaki listede bulunan değerlerden olmalı; listede olmayan bir konu uydurma.",
     "- topic değeri o dersin konu listesindeki ifadelerden BİRİYLE birebir aynı olmalı.",
-    "- Emin değilsen en olası konuyu seç ve confidence değerini düşür (0-1 arası).",
+    "- Emin değilsen o dersteki en olası konuyu seç ve confidence değerini düşür (0-1 arası).",
     "- Yalnızca JSON dizi döndür."
   ].join("\n");
 }

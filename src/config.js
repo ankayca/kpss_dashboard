@@ -23,14 +23,17 @@ const KPSS_LISANS_SECTIONS = {
   vatandaslik: { label: "Vatandaşlık", topics: ["Hukuka Giriş", "Anayasa", "Temel Haklar", "Yasama", "Yürütme", "Yargı", "Yerel Yönetimler", "Ekonomi Temelleri", "Gelir Dağılımı", "Türkiye Ekonomisi"] }
 };
 
-/** AGS (Akademi Giriş Sınavı) + ÖABT Okul Öncesi Öğretmenliği. */
+/** AGS (Akademi Giriş Sınavı) + ÖABT Okul Öncesi Öğretmenliği.
+    Konu dağılımı ÖSYM/MEB resmî AGS müfredatına göredir (80 soru):
+    Sözel 15, Sayısal 15, Tarih 6, Coğrafya 6, Eğitim Bilimleri 30, Mevzuat 8.
+    Not: AGS Sayısal Yetenek'te geometri YOKTUR. */
 const AGS_OKUL_ONCESI_SECTIONS = {
   sozel:           { label: "Sözel Yetenek",        topics: ["Sözcükte Anlam", "Cümlede Anlam", "Anlatımın Oluşması", "Paragrafta Anlam", "Sözel Mantık"] },
-  sayisal:         { label: "Sayısal Yetenek",      topics: ["Temel Matematik", "Grafik ve Tablo Yorumlama", "Mantıksal Muhakeme Problemleri"] },
+  sayisal:         { label: "Sayısal Yetenek",      topics: ["Temel Kavramlar", "Sayılar ve Sayı Basamakları", "Bölme ve Bölünebilme", "Asal Sayılar - Faktöriyel", "OBEB - OKEK", "Rasyonel ve Ondalık Sayılar", "Üslü Sayılar", "Köklü Sayılar", "Çarpanlara Ayırma", "Denklem ve Eşitsizlikler", "Mutlak Değer", "Fonksiyonlar", "Oran - Orantı", "Yüzde - Kâr/Zarar - Faiz", "Sayı ve Kesir Problemleri", "Yaş Problemleri", "Hareket (Hız) Problemleri", "İşçi - Havuz Problemleri", "Karışım Problemleri", "Grafik ve Tablo Yorumlama", "Mantıksal Muhakeme Problemleri"] },
   tarih:           { label: "Tarih",                topics: ["Osmanlı Öncesi Türk Devletleri", "Osmanlı Tarihi", "Atatürk İlkeleri ve İnkılap Tarihi", "Çağdaş Türk ve Dünya Tarihi"] },
   cografya:        { label: "Türkiye Coğrafyası",   topics: ["Türkiye Fiziki Coğrafyası", "Türkiye Beşeri ve Ekonomik Coğrafyası"] },
-  egitimBilimleri: { label: "Eğitim Bilimleri",     topics: ["Eğitimin Temelleri", "Öğretim Yöntem ve Teknikleri", "Sınıf Yönetimi", "Program Okuryazarlığı", "Ölçme ve Değerlendirme", "Öğrenme Psikolojisi", "Gelişim Psikolojisi", "Rehberlik", "Eğitim ve Öğretim Teknolojileri", "Türk Millî Eğitim Sistemi", "Türkiye Yüzyılı Maarif Modeli"] },
-  mevzuat:         { label: "Mevzuat",              topics: ["Anayasa ve İnsan Hakları", "1739 Millî Eğitim Temel Kanunu", "222 İlköğretim ve Eğitim Kanunu", "7528 Öğretmenlik Mesleği Kanunu"] },
+  egitimBilimleri: { label: "Eğitim Bilimleri ve Türk Millî Eğitim Sistemi", topics: ["Eğitimin Temelleri", "Öğretim Yöntem ve Teknikleri", "Sınıf Yönetimi", "Program Okuryazarlığı", "Eğitimde Ölçme ve Değerlendirme", "Öğrenme Psikolojisi", "Gelişim Psikolojisi", "Rehberlik", "Eğitim ve Öğretim Teknolojileri", "Türk Millî Eğitim Sisteminin Genel Yapısı", "Türkiye Yüzyılı Maarif Modeli"] },
+  mevzuat:         { label: "Mevzuat",              topics: ["Hukukun Temel Kavramları", "Türkiye Cumhuriyeti Anayasası", "1739 sayılı Millî Eğitim Temel Kanunu", "222 sayılı İlköğretim ve Eğitim Kanunu", "7528 sayılı Öğretmenlik Mesleği Kanunu"] },
   alanBilgisi:     { label: "Okul Öncesi · Alan Bilgisi", topics: ["Erken Çocukluk Eğitimine Giriş", "Çocuk Sağlığı ve İlk Yardım", "Erken Çocukluk Döneminde Gelişim", "Çocuk Ruh Sağlığı", "Erken Çocukluk Dönemi Edebiyatı", "Erken Çocuklukta Program, Yöntem ve Yaklaşımlar", "Anne-Baba Eğitimi", "Çocuk Hakları"] },
   alanEgitimi:     { label: "Okul Öncesi · Alan Eğitimi", topics: ["Erken Çocuklukta Fen Eğitimi", "Erken Çocuklukta Matematik Eğitimi", "Erken Çocuklukta Güzel Sanatlar Eğitimi", "Erken Çocuklukta Müzik Eğitimi", "Erken Çocuklukta Oyun", "Erken Çocuklukta Drama", "Öğrenme Yaklaşımları", "Okula Uyum ve Erken Okuryazarlık"] }
 };
