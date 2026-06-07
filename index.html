@@ -193,6 +193,10 @@
           <div class="form-row">
             <div class="field"><label>Tarih</label><input type="date" id="trialDate" /></div>
             <div class="field"><label>Süre (dakika)</label><input type="number" id="trialDuration" placeholder="135" min="0" /></div>
+            <div class="field" id="photoBookletField">
+              <label>Oturum / kitapçık</label>
+              <select id="photoBooklet"></select>
+            </div>
           </div>
           <label>Net girişi</label>
           <div id="netInputs"></div>
@@ -204,10 +208,6 @@
         <div class="step-marker">2</div>
         <div class="step-body">
           <div class="step-head"><div class="step-title">Fotoğraftan yanlışları bul <span class="step-tag">AI</span></div></div>
-          <div class="field" id="photoBookletField">
-            <label>Kitapçık / oturum</label>
-            <select id="photoBooklet"></select>
-          </div>
           <div class="field">
             <div id="photoDrop" class="photo-drop" role="button" tabindex="0" aria-label="Fotoğraf ekle">
               <div class="photo-drop-ico">🖼️</div>

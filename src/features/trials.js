@@ -1,7 +1,7 @@
 /* ============================================================
    FEATURE — Genel Denemeler (full mock exams + net calculator).
    ============================================================ */
-import { SECTIONS, SECTION_KEYS } from "../config.js";
+import { SECTIONS, SECTION_KEYS, BOOKLETS } from "../config.js";
 import { Store } from "../store.js";
 import { DB, persist } from "../state.js";
 import { $, esc, escAttr, toast, uid, fmtDate, reasonIcon } from "../utils.js";
@@ -22,31 +22,62 @@ import { createStepFlow } from "./stepFlow.js";
 // Draft of topic→reason tags created before the trial is saved.
 let trialTopicTagsDraft = null;
 
+// Entered net values kept per-section so switching oturum (booklet) preserves
+// what was typed for the other oturum. section -> { d: string, y: string }.
+let netDraft = {};
+
 // Progressive disclosure: each step appears once the previous is done.
 let stepFlow = null;
 function updateSteps() {
   if (stepFlow) stepFlow.update();
 }
 
-/* ---------- Form scaffolding ---------- */
-export function buildTrialForm() {
-  $("netInputs").innerHTML = SECTION_KEYS.map(
-    (k) =>
-      `<div class="net-card">
+/** Section keys belonging to the currently selected oturum (booklet). */
+function bookletSections() {
+  const sel = $("photoBooklet");
+  const b = BOOKLETS.find((x) => x.key === (sel && sel.value)) || BOOKLETS[0];
+  return ((b && b.sections) || SECTION_KEYS).filter((k) => SECTIONS[k]);
+}
+
+/** Render the net-entry grid for only the selected oturum's lessons. */
+function renderNetInputs() {
+  const host = $("netInputs");
+  if (!host) return;
+  host.innerHTML = bookletSections()
+    .map((k) => {
+      const draft = netDraft[k] || {};
+      return `<div class="net-card">
       <div class="net-card-h">${esc(SECTIONS[k].label)}</div>
       <div class="net-inputs">
-        <input type="number" min="0" id="dogru_${k}" placeholder="D" title="Doğru">
-        <input type="number" min="0" id="yanlis_${k}" placeholder="Y" title="Yanlış">
+        <input type="number" min="0" id="dogru_${k}" value="${escAttr(draft.d || "")}" placeholder="D" title="Doğru">
+        <input type="number" min="0" id="yanlis_${k}" value="${escAttr(draft.y || "")}" placeholder="Y" title="Yanlış">
       </div>
       <div class="net-val" id="netv_${k}">0.00 net</div>
-    </div>`
-  ).join("");
+    </div>`;
+    })
+    .join("");
+}
+
+/* ---------- Form scaffolding ---------- */
+export function buildTrialForm() {
+  renderNetInputs();
   // Wrong topics are no longer marked by hand; the AI confirmation list
   // (rendered into #topicChecks by photoImport) is the single source.
   generalPhotoImporter.renderConfirmList();
 
-  // Net entry is optional: the booklet/photo step is available immediately so
-  // users can pick the oturum (AGS / ÖABT or GY / GK) and upload right away.
+  // Switching the oturum re-renders the net grid to that oturum's lessons.
+  // (The photo importer also listens to clear staged photos / wrong numbers.)
+  const booklet = $("photoBooklet");
+  if (booklet && !booklet.dataset.netBound) {
+    booklet.addEventListener("change", () => {
+      renderNetInputs();
+      recalcNet();
+    });
+    booklet.dataset.netBound = "1";
+  }
+
+  // Net entry is optional: the photo step is available immediately so users
+  // can pick the oturum (AGS / ÖABT or GY / GK) and upload right away.
   const stepEl = (n) => document.querySelector(`#page-deneme .step[data-step="${n}"]`);
   stepFlow = createStepFlow([
     { el: stepEl(1) },
@@ -60,13 +91,20 @@ export function buildTrialForm() {
 }
 
 export function recalcNet() {
+  // Sync the currently visible inputs into the draft, then total every
+  // section that has been entered (across both oturum selections).
+  bookletSections().forEach((k) => {
+    const dEl = $("dogru_" + k);
+    const yEl = $("yanlis_" + k);
+    if (!dEl || !yEl) return;
+    netDraft[k] = { d: dEl.value, y: yEl.value };
+    const nv = $("netv_" + k);
+    if (nv) nv.textContent = netFromCounts(parseFloat(dEl.value) || 0, parseFloat(yEl.value) || 0).toFixed(2) + " net";
+  });
   let total = 0;
   SECTION_KEYS.forEach((k) => {
-    const d = parseFloat($("dogru_" + k).value) || 0;
-    const y = parseFloat($("yanlis_" + k).value) || 0;
-    const net = netFromCounts(d, y);
-    $("netv_" + k).textContent = net.toFixed(2) + " net";
-    total += net;
+    const dr = netDraft[k];
+    if (dr) total += netFromCounts(parseFloat(dr.d) || 0, parseFloat(dr.y) || 0);
   });
   $("netTotal").textContent = "Toplam: " + total.toFixed(2) + " net";
   updateSteps();
@@ -125,10 +163,8 @@ async function finishTrialSave(payload) {
   });
   $("trialDuration").value = "";
   $("trialNotes").value = "";
-  SECTION_KEYS.forEach((k) => {
-    $("dogru_" + k).value = "";
-    $("yanlis_" + k).value = "";
-  });
+  netDraft = {};
+  renderNetInputs();
   generalPhotoImporter.clearResults();
   trialTopicTagsDraft = null;
   updateTrialTagDraftHint();
@@ -145,8 +181,9 @@ export function addTrial() {
   const nets = {};
   const counts = {};
   SECTION_KEYS.forEach((k) => {
-    const d = parseFloat($("dogru_" + k).value) || 0;
-    const y = parseFloat($("yanlis_" + k).value) || 0;
+    const dr = netDraft[k] || {};
+    const d = parseFloat(dr.d) || 0;
+    const y = parseFloat(dr.y) || 0;
     nets[k] = netFromCounts(d, y);
     counts[k] = { d, y };
   });
