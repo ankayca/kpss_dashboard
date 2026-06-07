@@ -49,8 +49,11 @@
           <label>Şifre (en az 6 karakter)
             <input type="password" id="regPassword" autocomplete="new-password" minlength="6" required />
           </label>
-          <label>Sınav profili
-            <select id="regProfile" required></select>
+          <label>Sınav türü
+            <select id="regExamType" required></select>
+          </label>
+          <label class="hidden" id="regBranchField">Branş (ÖABT)
+            <select id="regBranch"></select>
           </label>
           <div class="auth-error hidden" id="registerError"></div>
           <button type="submit" class="auth-submit">Kayıt Ol</button>
@@ -65,8 +68,11 @@
     <div class="auth-form hidden" id="profilePick">
       <form id="profilePickForm">
         <p class="auth-sub">Hangi sınava çalışıyorsun?</p>
-        <label>Sınav profili
-          <select id="pickProfile" required></select>
+        <label>Sınav türü
+          <select id="pickExamType" required></select>
+        </label>
+        <label class="hidden" id="pickBranchField">Branş (ÖABT)
+          <select id="pickBranch"></select>
         </label>
         <div class="auth-error hidden" id="pickError"></div>
         <button type="submit" class="auth-submit">Devam Et</button>
@@ -164,8 +170,8 @@
   <section class="page active" id="page-deneme">
     <div class="page-head">
       <div>
-        <h1>Genel Denemeler</h1>
-        <p>Deneme sonucunu gir, fotoğraftan yanlış konularını çıkar ve sebebini etiketle.</p>
+        <h1>Denemeler</h1>
+        <p>Oturumu (örn. AGS / ÖABT veya GY / GK) seç, fotoğraftan yanlış konularını çıkar ve sebebini etiketle.</p>
       </div>
     </div>
 
@@ -252,90 +258,6 @@
       <h2>Kayıtlı Denemeler</h2>
       <div class="sub" id="trialSummary"></div>
       <div style="overflow-x:auto;"><table id="trialTable"></table></div>
-    </div>
-  </section>
-
-  <!-- ============ ALAN DENEMELERİ ============ -->
-  <section class="page" id="page-alan">
-    <div class="page-head">
-      <div>
-        <h1>Alan Denemeleri</h1>
-        <p>Tek bir dersin denemesini gir, fotoğraftan yanlış konularını çıkar ve sebebiyle etiketle.</p>
-      </div>
-    </div>
-
-    <div class="card stepper">
-      <div class="step" data-step="1">
-        <div class="step-marker">1</div>
-        <div class="step-body">
-          <div class="step-head"><div class="step-title">Deneme bilgisi</div></div>
-          <div class="form-row">
-            <div class="field"><label>Tarih</label><input type="date" id="subjTrialDate" /></div>
-            <div class="field"><label>Ders</label><select id="subjTrialSection"></select></div>
-            <div class="field"><label>Süre (dakika)</label><input type="number" id="subjTrialDuration" placeholder="40" min="0" /></div>
-          </div>
-          <div class="form-row">
-            <div class="field" style="max-width:140px"><label>Doğru</label><input type="number" id="subjDogru" placeholder="D" min="0" /></div>
-            <div class="field" style="max-width:140px"><label>Yanlış</label><input type="number" id="subjYanlis" placeholder="Y" min="0" /></div>
-            <div class="field" style="display:flex; align-items:flex-end;"><div id="subjNetVal" class="net-val">0.00 net</div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="step step-hero locked" data-step="2">
-        <div class="step-marker">2</div>
-        <div class="step-body">
-          <div class="step-head"><div class="step-title">Fotoğraftan yanlışları bul <span class="step-tag">AI</span></div></div>
-          <div class="field">
-            <div id="subjPhotoDrop" class="photo-drop" role="button" tabindex="0" aria-label="Fotoğraf ekle">
-              <div class="photo-drop-ico">🖼️</div>
-              <div class="photo-drop-text">
-                <strong>Fotoğrafları buraya sürükle</strong>
-                <span>ya da dosya seçmek için tıkla</span>
-              </div>
-              <button type="button" class="btn ghost sm photo-cam-btn" data-action="subjPhotoCamera">📷 Fotoğraf çek</button>
-            </div>
-            <input type="file" id="subjPhotoFile" accept="image/*" multiple hidden />
-            <input type="file" id="subjPhotoCam" accept="image/*" capture="environment" hidden />
-          </div>
-          <div class="field"><label>Yanlış sorular</label><input type="text" id="subjPhotoWrong" placeholder="3, 7, 12" /></div>
-          <div id="subjPhotoThumbs" class="photo-thumbs"></div>
-          <div class="btn-row" style="margin-top:8px">
-            <button type="button" class="btn sm" id="subjPhotoClassifyBtn" data-action="runSubjPhotoClassify">Konuları bul (AI)</button>
-            <span class="sub" id="subjPhotoStatus" style="margin:0"></span>
-          </div>
-        </div>
-      </div>
-
-      <div class="step locked" data-step="3">
-        <div class="step-marker">3</div>
-        <div class="step-body">
-          <div class="step-head"><div class="step-title">Yanlış konuları onayla</div></div>
-          <div class="btn-row" style="margin:0 0 10px">
-            <button type="button" class="btn ghost sm" data-action="clearSubjPhotoResults">Listeyi temizle</button>
-            <span class="sub" id="subjPhotoConfirmHint" style="margin:0"></span>
-          </div>
-          <div id="subjTopicChecks"></div>
-        </div>
-      </div>
-
-      <div class="step locked" data-step="4">
-        <div class="step-marker">4</div>
-        <div class="step-body">
-          <div class="step-head"><div class="step-title">Kaydet</div></div>
-          <div class="field">
-            <label>Notlar (ops.)</label>
-            <textarea id="subjTrialNotes" placeholder="Geometride zorlandım, paragrafta yavaş kaldım..."></textarea>
-          </div>
-          <button type="button" class="btn" data-action="addSubjectTrial">Kaydet → sebepleri etiketle</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Kayıtlı Alan Denemeleri</h2>
-      <div class="sub" id="subjTrialSummary"></div>
-      <div style="overflow-x:auto;"><table id="subjTrialTable"></table></div>
     </div>
   </section>
 
@@ -482,11 +404,6 @@
         </div>
       </div>
 
-      <div class="card">
-        <h2>Alan Denemeleri — Ders Bazlı Ortalama Net</h2>
-        <div class="sub">Tek ders denemelerinde her dersin ortalama neti ve deneme sayısı</div>
-        <div id="subjTrialFreq"><div class="empty">Henüz alan denemesi yok.</div></div>
-      </div>
     </div>
 
     <!-- SEBEPLER & BAŞARIMLAR -->

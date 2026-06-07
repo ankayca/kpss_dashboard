@@ -149,7 +149,6 @@ export function exportData() {
     books: DB.books,
     sessions: DB.sessions,
     trials: DB.trials,
-    subjectTrials: DB.subjectTrials,
     reviews: DB.reviews,
     settings: DB.settings,
     _version: 2
@@ -181,7 +180,6 @@ export function importData(ev) {
         for (const b of p.books) await Store.put("books", b);
         for (const s of p.sessions) await Store.put("sessions", s);
         for (const t of p.trials) await Store.put("trials", t);
-        for (const t of p.subjectTrials) await Store.put("subjectTrials", t);
         for (const r of p.reviews) await Store.put("reviews", r);
         const st = p.settings;
         await Store.setMeta("examDate", typeof st.examDate === "string" ? st.examDate.slice(0, 12) : "");
@@ -224,7 +222,6 @@ export async function clearAll() {
   DB.books = [];
   DB.sessions = [];
   DB.trials = [];
-  DB.subjectTrials = [];
   DB.reviews = [];
   DB.settings.examDate = "";
   DB.settings.targetNet = null;
@@ -237,5 +234,5 @@ export async function clearAll() {
 export function renderDataStats() {
   const el = $("dataStats");
   if (!el) return;
-  el.innerHTML = `${DB.books.length} kitap · ${DB.sessions.length} yanlış kaydı · ${DB.trials.length} genel deneme · ${DB.subjectTrials.length} alan denemesi · ${DB.reviews.length} tekrar kaydı`;
+  el.innerHTML = `${DB.books.length} kitap · ${DB.sessions.length} yanlış kaydı · ${DB.trials.length} deneme · ${DB.reviews.length} tekrar kaydı`;
 }

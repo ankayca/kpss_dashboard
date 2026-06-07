@@ -24,13 +24,6 @@ let trialTopicTagsDraft = null;
 
 // Progressive disclosure: each step appears once the previous is done.
 let stepFlow = null;
-function netEntered() {
-  return SECTION_KEYS.some((k) => {
-    const d = $("dogru_" + k);
-    const y = $("yanlis_" + k);
-    return (d && d.value !== "") || (y && y.value !== "");
-  });
-}
 function updateSteps() {
   if (stepFlow) stepFlow.update();
 }
@@ -52,9 +45,11 @@ export function buildTrialForm() {
   // (rendered into #topicChecks by photoImport) is the single source.
   generalPhotoImporter.renderConfirmList();
 
+  // Net entry is optional: the booklet/photo step is available immediately so
+  // users can pick the oturum (AGS / ÖABT or GY / GK) and upload right away.
   const stepEl = (n) => document.querySelector(`#page-deneme .step[data-step="${n}"]`);
   stepFlow = createStepFlow([
-    { el: stepEl(1), gate: netEntered },
+    { el: stepEl(1) },
     { el: stepEl(2), gate: () => generalPhotoImporter.hasMatches() },
     { el: stepEl(3), gate: () => generalPhotoImporter.hasMatches() },
     { el: stepEl(4) }

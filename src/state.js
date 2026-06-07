@@ -11,7 +11,6 @@ export const DB = {
   books: [],
   sessions: [],
   trials: [],
-  subjectTrials: [],
   reviews: [],
   settings: {
     examDate: "",
@@ -45,17 +44,15 @@ export async function persist(action) {
 }
 
 export async function hydrate() {
-  const [books, sessions, trials, subjectTrials, reviews] = await Promise.all([
+  const [books, sessions, trials, reviews] = await Promise.all([
     Store.all("books"),
     Store.all("sessions"),
     Store.all("trials"),
-    Store.all("subjectTrials"),
     Store.all("reviews")
   ]);
   DB.books = (books || []).map(Data.normalizeBook).filter(Boolean);
   DB.sessions = (sessions || []).map(Data.normalizeSession).filter(Boolean);
   DB.trials = (trials || []).map(Data.normalizeTrial).filter(Boolean);
-  DB.subjectTrials = (subjectTrials || []).map(Data.normalizeSubjectTrial).filter(Boolean);
   DB.reviews = (reviews || []).map(Data.normalizeReview).filter(Boolean);
 
   const [theme, targetNet, examDate, dailyQuestionGoal, dailyMinuteGoal, notifyReviews, onboardDismissed] =

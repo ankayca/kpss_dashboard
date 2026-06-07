@@ -64,35 +64,6 @@ export function sortedTrials() {
   return [...DB.trials].sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/* ---------- Subject trials (alan denemeleri) ---------- */
-export function sortedSubjectTrials() {
-  return [...DB.subjectTrials].sort((a, b) => a.date.localeCompare(b.date));
-}
-
-/** Questions answered in a subject trial (correct + wrong). */
-export function subjectTrialQuestions(t) {
-  return (Number(t.d) || 0) + (Number(t.y) || 0);
-}
-
-/** Per-ders aggregate of subject trials: { section, label, count, avgNet, bestNet }. */
-export function subjectTrialAveragesBySection(subjectTrials = DB.subjectTrials) {
-  const map = {};
-  subjectTrials.forEach((t) => {
-    if (!SECTIONS[t.section]) return;
-    map[t.section] = map[t.section] || { section: t.section, count: 0, sumNet: 0, bestNet: -Infinity };
-    map[t.section].count += 1;
-    map[t.section].sumNet += t.net || 0;
-    map[t.section].bestNet = Math.max(map[t.section].bestNet, t.net || 0);
-  });
-  return SECTION_KEYS.filter((k) => map[k]).map((k) => ({
-    section: k,
-    label: SECTIONS[k].label,
-    count: map[k].count,
-    avgNet: map[k].sumNet / map[k].count,
-    bestNet: map[k].bestNet
-  }));
-}
-
 /** Section net from raw correct/wrong counts. */
 export function netFromCounts(d, y) {
   return (Number(d) || 0) - (Number(y) || 0) * WRONG_PENALTY;
@@ -111,25 +82,18 @@ export function tagsToWrongTopicTags(tagResults) {
   });
   return out;
 }
-export function collectReasonStats(
-  sessions = DB.sessions,
-  trials = DB.trials,
-  subjectTrials = DB.subjectTrials
-) {
+export function collectReasonStats(sessions = DB.sessions, trials = DB.trials) {
   const counts = {};
   sessions.forEach((s) =>
     Object.values(getSessionWrongTags(s)).forEach((r) => {
       if (r) counts[r] = (counts[r] || 0) + 1;
     })
   );
-  const addEntries = (recs) =>
-    recs.forEach((t) =>
-      listTrialWrongEntries(t).forEach((e) => {
-        if (e.reason) counts[e.reason] = (counts[e.reason] || 0) + 1;
-      })
-    );
-  addEntries(trials);
-  addEntries(subjectTrials);
+  trials.forEach((t) =>
+    listTrialWrongEntries(t).forEach((e) => {
+      if (e.reason) counts[e.reason] = (counts[e.reason] || 0) + 1;
+    })
+  );
   return counts;
 }
 
@@ -139,11 +103,7 @@ export function hasActiveReview(lesson, topic) {
 }
 
 /* ---------- Mastery ---------- */
-export function computeMastery(
-  sessions = DB.sessions,
-  trials = DB.trials,
-  subjectTrials = DB.subjectTrials
-) {
+export function computeMastery(sessions = DB.sessions, trials = DB.trials) {
   const map = {};
   const key = (l, t) => l + "||" + t;
   sessions.forEach((s) => {
@@ -153,16 +113,13 @@ export function computeMastery(
     map[k].total += s.total;
     map[k].wrong += getSessionWrongList(s).length;
   });
-  const addFlags = (recs) =>
-    recs.forEach((t) =>
-      listTrialWrongEntries(t).forEach((e) => {
-        const kk = key(e.section, e.topic);
-        map[kk] = map[kk] || { lesson: e.section, topic: e.topic, total: 0, wrong: 0, flags: 0 };
-        map[kk].flags += 1;
-      })
-    );
-  addFlags(trials);
-  addFlags(subjectTrials);
+  trials.forEach((t) =>
+    listTrialWrongEntries(t).forEach((e) => {
+      const kk = key(e.section, e.topic);
+      map[kk] = map[kk] || { lesson: e.section, topic: e.topic, total: 0, wrong: 0, flags: 0 };
+      map[kk].flags += 1;
+    })
+  );
   return Object.values(map).map((m) => {
     let score;
     const hasKonu = m.total > 0;
@@ -181,7 +138,6 @@ export function activityCounts() {
   const m = {};
   DB.sessions.forEach((s) => (m[s.date] = (m[s.date] || 0) + 1));
   DB.trials.forEach((t) => (m[t.date] = (m[t.date] || 0) + 1));
-  DB.subjectTrials.forEach((t) => (m[t.date] = (m[t.date] || 0) + 1));
   DB.reviews.forEach((r) => (r.history || []).forEach((d) => (m[d] = (m[d] || 0) + 1)));
   return m;
 }
@@ -228,9 +184,6 @@ export function questionsOnDate(dateStr) {
   DB.trials.forEach((t) => {
     if (t.date === dateStr) q += trialQuestions(t);
   });
-  DB.subjectTrials.forEach((t) => {
-    if (t.date === dateStr) q += subjectTrialQuestions(t);
-  });
   return q;
 }
 
@@ -241,9 +194,6 @@ export function minutesOnDate(dateStr) {
     if (s.date === dateStr) m += s.duration || 0;
   });
   DB.trials.forEach((t) => {
-    if (t.date === dateStr) m += t.duration || 0;
-  });
-  DB.subjectTrials.forEach((t) => {
     if (t.date === dateStr) m += t.duration || 0;
   });
   return m;
@@ -274,10 +224,8 @@ export function computeAchievements() {
   const streak = computeStreak(counts);
   const totalQuestions =
     DB.sessions.reduce((a, s) => a + (s.total || 0), 0) +
-    DB.trials.reduce((a, t) => a + trialQuestions(t), 0) +
-    DB.subjectTrials.reduce((a, t) => a + subjectTrialQuestions(t), 0);
+    DB.trials.reduce((a, t) => a + trialQuestions(t), 0);
   const trialCount = DB.trials.length;
-  const subjectTrialCount = DB.subjectTrials.length;
   const perfectSessions = DB.sessions.filter((s) => getSessionWrongList(s).length === 0).length;
   const completedReviews = DB.reviews.filter((r) => r.done).length;
 
@@ -287,8 +235,7 @@ export function computeAchievements() {
     { id: "q100", abbr: "100", title: "100 Soru", desc: "Toplam 100 soru çöz", goal: 100, value: totalQuestions },
     { id: "q500", abbr: "500", title: "500 Soru", desc: "Toplam 500 soru çöz", goal: 500, value: totalQuestions },
     { id: "q1000", abbr: "1K", title: "1000 Soru", desc: "Toplam 1000 soru çöz", goal: 1000, value: totalQuestions },
-    { id: "trial5", abbr: "5D", title: "5 Deneme", desc: "5 genel deneme çöz", goal: 5, value: trialCount },
-    { id: "subjtrial10", abbr: "10A", title: "10 Alan Denemesi", desc: "10 alan (tek ders) denemesi çöz", goal: 10, value: subjectTrialCount },
+    { id: "trial5", abbr: "5D", title: "5 Deneme", desc: "5 deneme çöz", goal: 5, value: trialCount },
     { id: "perfect", abbr: "TAM", title: "İlk Tam Puan", desc: "Bir konu testini tam yap", goal: 1, value: perfectSessions },
     { id: "review1", abbr: "TKR", title: "İlk Tekrar Bitti", desc: "Bir konunun tüm tekrarlarını tamamla", goal: 1, value: completedReviews }
   ];
@@ -331,11 +278,6 @@ export function studyMinutesByWeek() {
     const wk = startOfWeek(s.date);
     map[wk] = (map[wk] || 0) + s.duration;
   });
-  DB.subjectTrials.forEach((t) => {
-    if (!t.duration) return;
-    const wk = startOfWeek(t.date);
-    map[wk] = (map[wk] || 0) + t.duration;
-  });
   return Object.keys(map)
     .sort()
     .map((wk) => ({ week: wk, minutes: map[wk] }));
@@ -354,7 +296,6 @@ export function reasonTrendByWeek() {
     Object.values(getSessionWrongTags(s)).forEach((r) => add(s.date, r))
   );
   DB.trials.forEach((t) => listTrialWrongEntries(t).forEach((e) => add(t.date, e.reason)));
-  DB.subjectTrials.forEach((t) => listTrialWrongEntries(t).forEach((e) => add(t.date, e.reason)));
   return { labels: Object.keys(weeks).sort(), weeks };
 }
 

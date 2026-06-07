@@ -8,7 +8,7 @@
    app, and only resolves once the visitor is authenticated AND has
    picked an exam profile.
    ============================================================ */
-import { PROFILE_OPTIONS } from "./config.js";
+import { EXAM_TYPES, AGS_BRANCH_OPTIONS } from "./config.js";
 import { $, esc } from "./utils.js";
 
 const GOOGLE_CLIENT_ID =
@@ -64,12 +64,41 @@ function setError(id, msg) {
   }
 }
 
-function fillProfileSelect(selectId) {
-  const sel = $(selectId);
-  if (!sel) return;
-  sel.innerHTML = PROFILE_OPTIONS.map(
-    (p) => `<option value="${esc(p.id)}">${esc(p.examName)}</option>`
+/**
+ * Wire a two-step exam picker: an exam-type <select> plus an AGS-only branch
+ * <select> (hidden unless AGS is chosen). Returns a `resolve()` that yields the
+ * final profileId, or null when AGS is selected without a branch.
+ */
+function setupExamPicker(typeId, branchId, branchFieldId) {
+  const typeSel = $(typeId);
+  const branchSel = $(branchId);
+  const branchField = $(branchFieldId);
+  if (!typeSel) return { resolve: () => null };
+
+  typeSel.innerHTML = EXAM_TYPES.map(
+    (t) => `<option value="${esc(t.type)}">${esc(t.label)}</option>`
   ).join("");
+  if (branchSel) {
+    branchSel.innerHTML = AGS_BRANCH_OPTIONS.map(
+      (b) => `<option value="${esc(b.id)}">${esc(b.branchName)}</option>`
+    ).join("");
+  }
+
+  const sync = () => {
+    const isAgs = typeSel.value === "ags";
+    if (branchField) branchField.classList.toggle("hidden", !isAgs);
+    if (branchSel) branchSel.disabled = !isAgs;
+  };
+  typeSel.addEventListener("change", sync);
+  sync();
+
+  const resolve = () => {
+    const type = EXAM_TYPES.find((t) => t.type === typeSel.value);
+    if (!type) return null;
+    if (type.profileId) return type.profileId; // KPSS → fixed profile
+    return branchSel && branchSel.value ? branchSel.value : null; // AGS → branch
+  };
+  return { resolve };
 }
 
 let googleInited = false;
@@ -118,8 +147,8 @@ function whenGoogleReady(onCredential) {
 export function runAuthGate() {
   return new Promise((resolve) => {
     const screen = $("authScreen");
-    fillProfileSelect("regProfile");
-    fillProfileSelect("pickProfile");
+    const regPicker = setupExamPicker("regExamType", "regBranch", "regBranchField");
+    const pickPicker = setupExamPicker("pickExamType", "pickBranch", "pickBranchField");
 
     const done = (user) => {
       show(screen, false);
@@ -167,12 +196,17 @@ export function runAuthGate() {
     $("registerForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       setError("registerError", "");
+      const profileId = regPicker.resolve();
+      if (!profileId) {
+        setError("registerError", "Lütfen branşını seç.");
+        return;
+      }
       try {
         const resp = await Auth.register({
           name: $("regName").value.trim(),
           email: $("regEmail").value.trim(),
           password: $("regPassword").value,
-          profileId: $("regProfile").value
+          profileId
         });
         finishOrPickProfile(resp);
       } catch (err) {
@@ -184,8 +218,13 @@ export function runAuthGate() {
     $("profilePickForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       setError("pickError", "");
+      const profileId = pickPicker.resolve();
+      if (!profileId) {
+        setError("pickError", "Lütfen branşını seç.");
+        return;
+      }
       try {
-        const resp = await Auth.setProfile($("pickProfile").value);
+        const resp = await Auth.setProfile(profileId);
         done(resp.user);
       } catch (err) {
         setError("pickError", err.message);

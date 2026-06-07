@@ -68,10 +68,30 @@ function classifyCacheSet(key, val) {
   classifyCache.set(key, { ...val, exp: Date.now() + CLASSIFY_CACHE_TTL_MS });
 }
 
-/** Exam profiles a new account may pick from (mirrors src/config.js). */
-const PROFILE_IDS = ["kpssLisans", "agsOkulOncesi"];
+/** Exam profiles a new account may pick from (mirrors src/config.js).
+    KPSS Lisans + every AGS/ÖABT branch. */
+const PROFILE_IDS = [
+  "kpssLisans",
+  "agsOkulOncesi",
+  "agsSinifOgretmenligi",
+  "agsTurkce",
+  "agsTurkDiliEdebiyati",
+  "agsIlkogretimMatematik",
+  "agsMatematik",
+  "agsFenBilimleri",
+  "agsFizik",
+  "agsKimya",
+  "agsBiyoloji",
+  "agsSosyalBilgiler",
+  "agsTarih",
+  "agsCografya",
+  "agsRehberlik",
+  "agsBedenEgitimi",
+  "agsDinKulturu",
+  "agsOzelEgitim"
+];
 
-const COLLECTIONS = ["books", "sessions", "trials", "subjectTrials", "reviews"];
+const COLLECTIONS = ["books", "sessions", "trials", "reviews"];
 
 const SESSION_COOKIE = "kpss_sid";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days

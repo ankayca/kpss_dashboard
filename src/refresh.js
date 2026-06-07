@@ -5,7 +5,6 @@
    ============================================================ */
 import { renderBooks, renderSessions } from "./features/books.js";
 import { renderTrials } from "./features/trials.js";
-import { renderSubjectTrials } from "./features/subjectTrials.js";
 import { renderReviews, updateRevBadge } from "./features/reviews.js";
 import {
   renderExamInfo,
@@ -21,7 +20,6 @@ export function refreshAll() {
   renderBooks();
   renderSessions();
   renderTrials();
-  renderSubjectTrials();
   renderReviews();
   renderExamInfo();
   renderTargetInfo();

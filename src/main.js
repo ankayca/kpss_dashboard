@@ -12,7 +12,6 @@ import { nav, registerPageRenderer, renderNav } from "./nav.js";
 import { initTagGame } from "./tagGame.js";
 import { fillLessonSelect } from "./features/books.js";
 import { buildTrialForm, updateTrialTagDraftHint } from "./features/trials.js";
-import { fillSubjectTrialSection } from "./features/subjectTrials.js";
 import { fillRevLessonSelect, renderReviews, maybeNotifyDueReviews } from "./features/reviews.js";
 import { renderAnalytics } from "./features/analytics.js";
 import { updateSessWrongHint } from "./features/books.js";
@@ -66,7 +65,6 @@ async function init() {
 
   fillLessonSelect();
   buildTrialForm();
-  fillSubjectTrialSection();
   fillRevLessonSelect();
   updateTrialTagDraftHint();
   updateSessWrongHint();
@@ -74,10 +72,8 @@ async function init() {
   const today = todayStr();
   const sessDate = $("sessDate");
   const trialDate = $("trialDate");
-  const subjTrialDate = $("subjTrialDate");
   if (sessDate) sessDate.value = today;
   if (trialDate) trialDate.value = today;
-  if (subjTrialDate) subjTrialDate.value = today;
 
   const tagOv = $("tagOverlay");
   if (tagOv && tagOv.parentElement !== document.body) document.body.appendChild(tagOv);

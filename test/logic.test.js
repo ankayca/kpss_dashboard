@@ -4,8 +4,7 @@ import {
   normalizeTrial,
   normalizeSession,
   normalizeReview,
-  normalizeImport,
-  normalizeSubjectTrial
+  normalizeImport
 } from "../src/data.js";
 import { DB } from "../src/state.js";
 import {
@@ -17,8 +16,6 @@ import {
   netFromCounts,
   totalNet,
   trialQuestions,
-  subjectTrialQuestions,
-  subjectTrialAveragesBySection,
   questionsOnDate,
   minutesOnDate,
   computeAchievements,
@@ -43,7 +40,6 @@ function resetDB() {
   DB.books = [];
   DB.sessions = [];
   DB.trials = [];
-  DB.subjectTrials = [];
   DB.reviews = [];
   DB.settings = { examDate: "", targetNet: null, theme: "dark" };
 }
@@ -172,71 +168,6 @@ describe("computeMastery", () => {
     const p = m.find((x) => x.topic === "Paragraf");
     expect(p.hasKonu).toBe(false);
     expect(p.score).toBe(60); // 70 - 10
-  });
-});
-
-describe("normalizeSubjectTrial", () => {
-  it("derives net from d/y and keeps the section", () => {
-    const t = normalizeSubjectTrial({ id: "a1", date: "2026-01-01", section: "matematik", d: 20, y: 4 });
-    expect(t.section).toBe("matematik");
-    expect(t.net).toBeCloseTo(19, 5);
-  });
-  it("drops records without id, date or a valid section", () => {
-    expect(normalizeSubjectTrial({ date: "2026-01-01", section: "matematik" })).toBeNull();
-    expect(normalizeSubjectTrial({ id: "x", section: "matematik" })).toBeNull();
-    expect(normalizeSubjectTrial({ id: "x", date: "2026-01-01", section: "yok" })).toBeNull();
-  });
-  it("clamps negative counts and preserves nested wrongTopicTags", () => {
-    const t = normalizeSubjectTrial({
-      id: "a1",
-      date: "2026-01-01",
-      section: "tarih",
-      d: -3,
-      y: -2,
-      wrongTopicTags: { tarih: { Selçuklular: "Bilgi eksiği" } }
-    });
-    expect(t.d).toBe(0);
-    expect(t.y).toBe(0);
-    expect(t.wrongTopicTags).toEqual({ tarih: { Selçuklular: "Bilgi eksiği" } });
-  });
-});
-
-describe("subject trial domain helpers", () => {
-  beforeEach(resetDB);
-  it("counts questions as correct + wrong", () => {
-    const t = normalizeSubjectTrial({ id: "a1", date: "2026-01-01", section: "matematik", d: 18, y: 2 });
-    expect(subjectTrialQuestions(t)).toBe(20);
-  });
-  it("aggregates averages and best net per ders", () => {
-    DB.subjectTrials = [
-      normalizeSubjectTrial({ id: "a1", date: "2026-01-01", section: "matematik", d: 20, y: 0 }),
-      normalizeSubjectTrial({ id: "a2", date: "2026-01-02", section: "matematik", d: 10, y: 0 }),
-      normalizeSubjectTrial({ id: "a3", date: "2026-01-03", section: "tarih", d: 8, y: 4 })
-    ];
-    const rows = subjectTrialAveragesBySection();
-    const mat = rows.find((r) => r.section === "matematik");
-    expect(mat.count).toBe(2);
-    expect(mat.avgNet).toBeCloseTo(15, 5);
-    expect(mat.bestNet).toBeCloseTo(20, 5);
-  });
-  it("feeds questions, minutes and mastery flags", () => {
-    DB.subjectTrials = [
-      normalizeSubjectTrial({
-        id: "a1",
-        date: "2026-01-01",
-        section: "matematik",
-        d: 18,
-        y: 2,
-        duration: 40,
-        wrongTopicTags: { matematik: { Problemler: "Süre yetmedi" } }
-      })
-    ];
-    expect(questionsOnDate("2026-01-01")).toBe(20);
-    expect(minutesOnDate("2026-01-01")).toBe(40);
-    const m = computeMastery();
-    const prob = m.find((x) => x.topic === "Problemler");
-    expect(prob.flags).toBe(1);
-    expect(prob.hasKonu).toBe(false);
   });
 });
 

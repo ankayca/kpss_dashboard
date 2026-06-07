@@ -9,8 +9,6 @@ import { $, esc, escAttr, fmtDate, ymd, cssVar, normTopic } from "../utils.js";
 import {
   lessonLabel,
   sortedTrials,
-  sortedSubjectTrials,
-  subjectTrialAveragesBySection,
   totalNet,
   activityCounts,
   computeStreak,
@@ -56,11 +54,6 @@ function passDate(dateStr) {
 }
 function filteredTrials() {
   return sortedTrials().filter((t) => passDate(t.date));
-}
-function filteredSubjectTrials() {
-  return sortedSubjectTrials().filter(
-    (t) => passDate(t.date) && (!FILTER.lesson || t.section === FILTER.lesson)
-  );
 }
 function filteredSessions() {
   return DB.sessions.filter(
@@ -131,7 +124,6 @@ export function renderAnalytics() {
   setupFilterControls();
   const trials = filteredTrials();
   const sessions = filteredSessions();
-  const subjectTrials = filteredSubjectTrials();
   const counts = activityCounts();
 
   renderCountdown();
@@ -147,7 +139,7 @@ export function renderAnalytics() {
   renderPace(trials);
   renderPredict();
   renderWeeklyCompare();
-  renderMastery(sessions, trials, subjectTrials);
+  renderMastery(sessions, trials);
   drawTrend(trials);
   drawSection(trials);
   drawSectionTrend(trials);
@@ -156,8 +148,7 @@ export function renderAnalytics() {
   drawReasonTrend();
   drawTrialTopicFreq(trials);
   const konuCounts = drawKonuTopicFreq(sessions);
-  drawSubjectTrialFreq(subjectTrials);
-  drawReasonFreq(sessions, trials, subjectTrials);
+  drawReasonFreq(sessions, trials);
   drawIntersection(trials, konuCounts);
   renderAchievements();
 }
@@ -387,8 +378,8 @@ function renderHeatmap(counts) {
   }
 }
 
-function renderMastery(sessions, trials, subjectTrials) {
-  const items = computeMastery(sessions, trials, subjectTrials)
+function renderMastery(sessions, trials) {
+  const items = computeMastery(sessions, trials)
     .filter((m) => !FILTER.lesson || m.lesson === FILTER.lesson)
     .sort((a, b) => a.score - b.score);
   const el = $("mastery");
@@ -647,44 +638,19 @@ function drawKonuTopicFreq(sessions) {
   return counts;
 }
 
-function drawSubjectTrialFreq(subjectTrials) {
-  const el = $("subjTrialFreq");
-  if (!el) return;
-  const rows = subjectTrialAveragesBySection(subjectTrials);
-  if (!rows.length) {
-    el.innerHTML = '<div class="empty">Henüz alan denemesi yok.</div>';
-    return;
-  }
-  const max = Math.max(...rows.map((r) => Math.max(r.avgNet, 0)), 1);
-  el.innerHTML = rows
-    .map((r) =>
-      barRow(
-        `${esc(r.label)} <span class="pill">${r.count} deneme · en iyi ${r.bestNet.toFixed(2)}</span>`,
-        Number(r.avgNet.toFixed(2)),
-        max,
-        "",
-        true
-      )
-    )
-    .join("");
-}
-
-function drawReasonFreq(sessions, trials, subjectTrials) {
+function drawReasonFreq(sessions, trials) {
   const counts = {};
   sessions.forEach((s) =>
     Object.values(getSessionWrongTags(s)).forEach((r) => {
       if (r) counts[r] = (counts[r] || 0) + 1;
     })
   );
-  const addEntries = (recs) =>
-    recs.forEach((t) =>
-      listTrialWrongEntries(t).forEach((e) => {
-        if (!passLessonEntry(e.section)) return;
-        if (e.reason) counts[e.reason] = (counts[e.reason] || 0) + 1;
-      })
-    );
-  addEntries(trials);
-  addEntries(subjectTrials || []);
+  trials.forEach((t) =>
+    listTrialWrongEntries(t).forEach((e) => {
+      if (!passLessonEntry(e.section)) return;
+      if (e.reason) counts[e.reason] = (counts[e.reason] || 0) + 1;
+    })
+  );
   const el = $("reasonFreq");
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   el.innerHTML = entries.length

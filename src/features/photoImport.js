@@ -14,8 +14,8 @@
 
    This module is generic: `createPhotoImporter(config)` builds an
    isolated importer bound to a set of DOM ids and a taxonomy
-   provider, so both Genel Denemeler (booklet-scoped) and Alan
-   Denemeleri (single-ders) reuse the exact same flow.
+   provider. The Denemeler page uses it booklet-scoped (the booklet
+   picks which sections' taxonomy is sent to the AI).
    ============================================================ */
 import { SECTIONS, SECTION_KEYS, BOOKLETS } from "../config.js";
 import { $, esc, escAttr, toast, parseWrongNums } from "../utils.js";
@@ -432,27 +432,5 @@ export const generalPhotoImporter = createPhotoImporter({
     const booklet = BOOKLETS.find((b) => b.key === chosen) || BOOKLETS[0];
     const keys = ((booklet && booklet.sections) || SECTION_KEYS).filter((k) => SECTIONS[k]);
     return keys.map((k) => ({ key: k, label: SECTIONS[k].label, topics: SECTIONS[k].topics }));
-  }
-});
-
-/** Alan Denemeleri: AI is scoped to the single selected ders. */
-export const subjectPhotoImporter = createPhotoImporter({
-  useBooklet: false,
-  ids: {
-    drop: "subjPhotoDrop",
-    file: "subjPhotoFile",
-    cam: "subjPhotoCam",
-    wrong: "subjPhotoWrong",
-    thumbs: "subjPhotoThumbs",
-    classifyBtn: "subjPhotoClassifyBtn",
-    status: "subjPhotoStatus",
-    topicChecks: "subjTopicChecks",
-    confirmHint: "subjPhotoConfirmHint"
-  },
-  sectionsPayload() {
-    const sel = $("subjTrialSection");
-    const k = sel && sel.value;
-    if (!SECTIONS[k]) return [];
-    return [{ key: k, label: SECTIONS[k].label, topics: SECTIONS[k].topics }];
   }
 });

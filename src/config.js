@@ -23,19 +23,108 @@ const KPSS_LISANS_SECTIONS = {
   vatandaslik: { label: "Vatandaşlık", topics: ["Hukuka Giriş", "Anayasa", "Temel Haklar", "Yasama", "Yürütme", "Yargı", "Yerel Yönetimler", "Ekonomi Temelleri", "Gelir Dağılımı", "Türkiye Ekonomisi"] }
 };
 
-/** AGS (Akademi Giriş Sınavı) + ÖABT Okul Öncesi Öğretmenliği.
-    Konu dağılımı ÖSYM/MEB resmî AGS müfredatına göredir (80 soru):
-    Sözel 15, Sayısal 15, Tarih 6, Coğrafya 6, Eğitim Bilimleri 30, Mevzuat 8.
-    Not: AGS Sayısal Yetenek'te geometri YOKTUR. */
-const AGS_OKUL_ONCESI_SECTIONS = {
-  sozel:           { label: "Sözel Yetenek",        topics: ["Sözcükte Anlam", "Cümlede Anlam", "Anlatımın Oluşması", "Paragrafta Anlam", "Sözel Mantık"] },
-  sayisal:         { label: "Sayısal Yetenek",      topics: ["Temel Kavramlar", "Sayılar ve Sayı Basamakları", "Bölme ve Bölünebilme", "Asal Sayılar - Faktöriyel", "OBEB - OKEK", "Rasyonel ve Ondalık Sayılar", "Üslü Sayılar", "Köklü Sayılar", "Çarpanlara Ayırma", "Denklem ve Eşitsizlikler", "Mutlak Değer", "Fonksiyonlar", "Oran - Orantı", "Yüzde - Kâr/Zarar - Faiz", "Sayı ve Kesir Problemleri", "Yaş Problemleri", "Hareket (Hız) Problemleri", "İşçi - Havuz Problemleri", "Karışım Problemleri", "Grafik ve Tablo Yorumlama", "Mantıksal Muhakeme Problemleri"] },
+/** AGS (Akademi Giriş Sınavı) — tüm branşlar için ORTAK genel oturum (80 soru).
+    2026 resmî AGS müfredatına göredir. Bu altı ders her ÖABT branşında aynıdır;
+    branşa özel kısım yalnızca ÖABT alan dersleridir. */
+const AGS_COMMON_SECTIONS = {
+  sozel:           { label: "Sözel Yetenek",        topics: ["Sözcükte Anlam", "Cümlede Anlam", "Paragrafta Anlam", "Sözel Mantık"] },
+  sayisal:         { label: "Sayısal Yetenek",      topics: ["Temel Matematik", "Grafik ve Tablo Yorumlama", "Mantıksal Muhakeme Problemleri"] },
   tarih:           { label: "Tarih",                topics: ["Osmanlı Öncesi Türk Devletleri", "Osmanlı Tarihi", "Atatürk İlkeleri ve İnkılap Tarihi", "Çağdaş Türk ve Dünya Tarihi"] },
-  cografya:        { label: "Türkiye Coğrafyası",   topics: ["Türkiye Fiziki Coğrafyası", "Türkiye Beşeri ve Ekonomik Coğrafyası"] },
-  egitimBilimleri: { label: "Eğitim Bilimleri ve Türk Millî Eğitim Sistemi", topics: ["Eğitimin Temelleri", "Öğretim Yöntem ve Teknikleri", "Sınıf Yönetimi", "Program Okuryazarlığı", "Eğitimde Ölçme ve Değerlendirme", "Öğrenme Psikolojisi", "Gelişim Psikolojisi", "Rehberlik", "Eğitim ve Öğretim Teknolojileri", "Türk Millî Eğitim Sisteminin Genel Yapısı", "Türkiye Yüzyılı Maarif Modeli"] },
-  mevzuat:         { label: "Mevzuat",              topics: ["Hukukun Temel Kavramları", "Türkiye Cumhuriyeti Anayasası", "1739 sayılı Millî Eğitim Temel Kanunu", "222 sayılı İlköğretim ve Eğitim Kanunu", "7528 sayılı Öğretmenlik Mesleği Kanunu"] },
-  alanBilgisi:     { label: "Okul Öncesi · Alan Bilgisi", topics: ["Erken Çocukluk Eğitimine Giriş", "Çocuk Sağlığı ve İlk Yardım", "Erken Çocukluk Döneminde Gelişim", "Çocuk Ruh Sağlığı", "Erken Çocukluk Dönemi Edebiyatı", "Erken Çocuklukta Program, Yöntem ve Yaklaşımlar", "Anne-Baba Eğitimi", "Çocuk Hakları"] },
-  alanEgitimi:     { label: "Okul Öncesi · Alan Eğitimi", topics: ["Erken Çocuklukta Fen Eğitimi", "Erken Çocuklukta Matematik Eğitimi", "Erken Çocuklukta Güzel Sanatlar Eğitimi", "Erken Çocuklukta Müzik Eğitimi", "Erken Çocuklukta Oyun", "Erken Çocuklukta Drama", "Öğrenme Yaklaşımları", "Okula Uyum ve Erken Okuryazarlık"] }
+  cografya:        { label: "Türkiye Coğrafyası",   topics: ["Türkiye Fiziki Coğrafyası", "Türkiye Beşerî ve Ekonomik Coğrafyası"] },
+  egitimBilimleri: { label: "Eğitim Bilimleri ve Türk Millî Eğitim Sistemi", topics: ["Eğitim Biliminin Temel Kavramları", "Öğretim Süreçleri", "Ölçme ve Değerlendirme", "Gelişim Psikolojisi ve Öğrenme Psikolojisi", "Eğitim ve Öğretim Teknolojileri", "Türk Millî Eğitim Sistemi", "Türkiye Yüzyılı Maarif Modeli", "Eğitim ve Öğretimde Etik"] },
+  mevzuat:         { label: "Mevzuat",              topics: ["T.C. Anayasası", "İnsan Hakları", "1739 Sayılı Millî Eğitim Temel Kanunu", "222 Sayılı İlköğretim ve Eğitim Kanunu", "7528 Sayılı Öğretmenlik Mesleği Kanunu"] }
+};
+
+const AGS_COMMON_KEYS = Object.keys(AGS_COMMON_SECTIONS);
+
+/** Branşa özel ÖABT alan dersleri (50 soru). Her branş bir Alan Bilgisi ve bir
+    Alan Eğitimi dersine indirgenir; alt başlıklar konu olarak listelenir. */
+const OABT_BRANCHES = {
+  agsOkulOncesi: {
+    branchName: "Okul Öncesi",
+    alanBilgisi: ["Erken Çocukluk Eğitimine Giriş", "Çocuk Sağlığı ve İlk Yardım", "Erken Çocukluk Döneminde Gelişim", "Çocuk Ruh Sağlığı", "Erken Çocukluk Dönemi Edebiyatı", "Erken Çocuklukta Program, Yöntem ve Yaklaşımlar", "Anne-Baba Eğitimi", "Çocuk Hakları"],
+    alanEgitimi: ["Fen Eğitimi", "Matematik Eğitimi", "Güzel Sanatlar Eğitimi", "Müzik Eğitimi", "Oyun", "Drama", "Öğrenme Yaklaşımları", "Okula Uyum", "Erken Okuryazarlık Eğitimi"]
+  },
+  agsSinifOgretmenligi: {
+    branchName: "Sınıf Öğretmenliği",
+    alanBilgisi: ["İlkokulda Temel Matematik", "İlkokulda Temel Fen Bilimleri", "Türk Dili", "Türk Tarihi ve Kültürü", "Türkiye Coğrafyası ve Jeopolitiği", "Çocuk Edebiyatı"],
+    alanEgitimi: ["Hayat Bilgisi Öğretimi", "Sosyal Bilgiler Öğretimi", "Din Kültürü ve Ahlak Bilgisi Öğretimi", "Fen Bilgisi Öğretimi", "Drama", "Görsel Sanatlar Öğretimi", "Müzik Öğretimi", "Matematik Öğretimi", "İlk Okuma ve Yazma Öğretimi"]
+  },
+  agsTurkce: {
+    branchName: "Türkçe",
+    alanBilgisi: ["Anlama ve Anlatma Teknikleri", "Dil Bilgisi ve Dil Bilimi", "Çocuk Edebiyatı", "Türk Halk Edebiyatı", "Eski Türk Edebiyatı", "Yeni Türk Edebiyatı"],
+    alanEgitimi: ["Edebiyat Bilgi ve Kuramları"]
+  },
+  agsTurkDiliEdebiyati: {
+    branchName: "Türk Dili ve Edebiyatı",
+    alanBilgisi: ["Eski Türk Dili", "Yeni Türk Dili", "Türk Halk Edebiyatı", "Eski Türk Edebiyatı", "Yeni Türk Edebiyatı"],
+    alanEgitimi: ["Edebiyat Bilgi ve Kuramları"]
+  },
+  agsIlkogretimMatematik: {
+    branchName: "İlköğretim Matematik",
+    alanBilgisi: ["Analiz", "Cebir", "Geometri", "Uygulamalı Matematik"],
+    alanEgitimi: ["İlköğretim Matematik Öğretimi Yöntem ve Teknikleri"]
+  },
+  agsMatematik: {
+    branchName: "Matematik",
+    alanBilgisi: ["Analiz", "Cebir", "Geometri", "Uygulamalı Matematik"],
+    alanEgitimi: ["Matematik Öğretimi Yöntem ve Teknikleri"]
+  },
+  agsFenBilimleri: {
+    branchName: "Fen Bilimleri",
+    alanBilgisi: ["Fizik", "Kimya", "Biyoloji", "Jeoloji / Yer Bilimi", "Astronomi", "Çevre Bilimi"],
+    alanEgitimi: ["Fen Bilimleri Öğretimi Yöntem ve Teknikleri"]
+  },
+  agsFizik: {
+    branchName: "Fizik",
+    alanBilgisi: ["Mekanik", "Elektrik ve Manyetizma", "Maddenin Mekanik ve Isıl Özellikleri", "Dalgalar ve Optik", "Modern Fizik"],
+    alanEgitimi: ["Fizik Öğretimi Yöntem ve Teknikleri"]
+  },
+  agsKimya: {
+    branchName: "Kimya / Kimya Teknolojisi",
+    alanBilgisi: ["Temel Kimya", "Analitik Kimya", "Anorganik Kimya", "Organik Kimya", "Fizikokimya"],
+    alanEgitimi: ["Kimya Öğretimi Yöntem ve Teknikleri"]
+  },
+  agsBiyoloji: {
+    branchName: "Biyoloji",
+    alanBilgisi: ["Hücre ve Metabolizma", "Bitki Biyolojisi", "İnsan ve Hayvan Biyolojisi", "Ekoloji", "Canlıların Sınıflandırılması", "Genetik"],
+    alanEgitimi: ["Biyoloji Öğretimi Yöntem ve Teknikleri"]
+  },
+  agsSosyalBilgiler: {
+    branchName: "Sosyal Bilgiler",
+    alanBilgisi: ["Tarih", "Coğrafya", "Siyaset Bilimi", "Sosyal Bilgilerin Temelleri", "Bilim Teknoloji ve Toplum", "Sosyal Antropoloji ve Medeniyet Tarihi", "Ekonomi", "İnsan İlişkileri ve İletişim", "Sosyoloji", "Sosyal Proje Geliştirme"],
+    alanEgitimi: ["Sosyal Bilgiler Öğretimi Yöntem ve Teknikleri"]
+  },
+  agsTarih: {
+    branchName: "Tarih",
+    alanBilgisi: ["Tarih Metodolojisi", "Osmanlı Türkçesi", "Eski Çağ Tarihi", "İlk Türk Devletleri Tarihi", "Orta Çağ İslam Tarihi", "Osmanlı Tarihi", "Türkiye Cumhuriyeti Tarihi", "Orta Çağ'dan XX. Yüzyıl'a Dünya Tarihi", "XX. Yüzyıl Türk ve Dünya Tarihi"],
+    alanEgitimi: ["Tarih Öğretimi Yöntem ve Teknikleri"]
+  },
+  agsCografya: {
+    branchName: "Coğrafya",
+    alanBilgisi: ["Fiziki Coğrafya", "Beşerî ve Ekonomik Coğrafya", "Kıtalar ve Ülkeler Coğrafyası"],
+    alanEgitimi: ["Coğrafya Öğretimi Yöntem ve Teknikleri"]
+  },
+  agsRehberlik: {
+    branchName: "Rehberlik",
+    alanBilgisi: ["Temel Psikolojik Kavramlar", "Psikolojik Danışma Kuram, İlke ve Teknikleri", "Davranış ve Uyum Problemleri", "Bireyi Tanıma Teknikleri", "Bireyle Psikolojik Danışma", "Grupla Psikolojik Danışma", "Mesleki Rehberlik ve Kariyer Danışmanlığı", "Psikolojik Danışma ve Rehberlikte Araştırma ve Program Geliştirme", "Meslek Etiği ve Yasal Konular"],
+    alanEgitimi: ["Rehberlik Uygulamaları ve Okul Psikolojik Danışmanlığı"]
+  },
+  agsBedenEgitimi: {
+    branchName: "Beden Eğitimi",
+    alanBilgisi: ["Beden Eğitimi ve Sporun Temelleri", "İnsan Anatomisi ve Kinesiyoloji", "Sağlık Bilgisi ve İlk Yardım", "Egzersiz Fizyolojisi", "Antrenman Bilgisi", "Fiziksel Uygunluk", "Egzersiz ve Beslenme", "Engelliler İçin Beden Eğitimi ve Spor", "Psikomotor Gelişim", "Beden Eğitimi ve Spor Yönetimi", "Beceri Öğrenimi", "Atletizm", "Takım Sporları", "Ritim Eğitimi ve Dans / Halk Oyunları", "Jimnastik", "Eğitsel Oyunlar"],
+    alanEgitimi: ["Beden Eğitimi Öğretimi Yöntem ve Teknikleri"]
+  },
+  agsDinKulturu: {
+    branchName: "Din Kültürü ve Ahlak Bilgisi / İHL",
+    alanBilgisi: ["Kur'an-ı Kerim ve Tecvid", "Tefsir", "Hadis", "Fıkıh", "Akaid", "Kelam", "İslam Mezhepleri ve Akımları", "Siyer", "İslam Tarihi, Kültür ve Medeniyeti", "İslam Felsefesi", "Din Felsefesi", "Din Sosyolojisi", "Din Psikolojisi", "Din Eğitimi", "Dinler Tarihi"],
+    alanEgitimi: ["DKAB / İHL Meslek Dersleri Öğretimi Yöntem ve Teknikleri"]
+  },
+  agsOzelEgitim: {
+    branchName: "Özel Eğitim",
+    alanBilgisi: ["Zihin Yetersizliği ve Otizm Spektrum Bozukluğu", "Öğrenme Güçlüğü ve Özel Yetenek", "İşitme Yetersizliği", "Görme Yetersizliği", "Erken Çocuklukta Özel Eğitim", "Uygulamalı Davranış Analizi", "Bireyselleştirilmiş Eğitim Programları (BEP)", "Özel Eğitimde Değerlendirme", "Dil ve İletişim Becerilerinin Desteklenmesi", "Özel Eğitim Politikaları ve Yasal Düzenlemeler"],
+    alanEgitimi: ["Özel Eğitimde Okuma-Yazma Öğretimi", "Özel Eğitimde Fen ve Sosyal Bilgiler Öğretimi", "Özel Eğitimde Matematik Öğretimi", "Özel Eğitimde Sanatsal Becerilerin Öğretimi", "Özel Eğitimde Fiziksel Eğitim ve Spor", "Özel Eğitimde Sosyal Uyum Becerilerinin Öğretimi", "Özel Eğitimde Türkçe Öğretimi", "Özel Eğitimde Oyun ve Müzik", "Özel Eğitimde Aile Eğitimi", "2024 TYMM Özel Eğitim Programları"]
+  }
 };
 
 /* Booklets = separate question-numbering spaces in one sitting. Each booklet
@@ -48,16 +137,36 @@ const KPSS_LISANS_BOOKLETS = [
 ];
 
 // AGS sitting: AGS booklet (80 soru) and ÖABT alan booklet (50 soru) are
-// numbered independently, so they form two booklets.
-const AGS_OKUL_ONCESI_BOOKLETS = [
-  { key: "ags", label: "AGS Oturumu (Genel)", sections: ["sozel", "sayisal", "tarih", "cografya", "egitimBilimleri", "mevzuat"] },
+// numbered independently, so they form two booklets. Every AGS branch shares
+// the same booklet shape; only the ÖABT alan topics differ.
+const AGS_BOOKLETS = [
+  { key: "ags", label: "AGS Oturumu (Genel)", sections: AGS_COMMON_KEYS },
   { key: "oabt", label: "ÖABT · Alan Oturumu", sections: ["alanBilgisi", "alanEgitimi"] }
 ];
 
+/** Build a full AGS branch profile: shared AGS sections + the branch's ÖABT
+    alan dersleri, plus the standard two-booklet split. */
+function buildAgsProfile(id, spec) {
+  return {
+    id,
+    examName: `AGS · ${spec.branchName}`,
+    examType: "ags",
+    branchName: spec.branchName,
+    sections: {
+      ...AGS_COMMON_SECTIONS,
+      alanBilgisi: { label: `${spec.branchName} · Alan Bilgisi`, topics: spec.alanBilgisi },
+      alanEgitimi: { label: `${spec.branchName} · Alan Eğitimi`, topics: spec.alanEgitimi }
+    },
+    booklets: AGS_BOOKLETS
+  };
+}
+
 export const PROFILES = {
-  kpssLisans:    { id: "kpssLisans",    examName: "KPSS Lisans (GY-GK)",              sections: KPSS_LISANS_SECTIONS,     booklets: KPSS_LISANS_BOOKLETS },
-  agsOkulOncesi: { id: "agsOkulOncesi", examName: "AGS · Okul Öncesi Öğretmenliği",   sections: AGS_OKUL_ONCESI_SECTIONS, booklets: AGS_OKUL_ONCESI_BOOKLETS }
+  kpssLisans: { id: "kpssLisans", examName: "KPSS Lisans (GY-GK)", examType: "kpss", sections: KPSS_LISANS_SECTIONS, booklets: KPSS_LISANS_BOOKLETS }
 };
+for (const [id, spec] of Object.entries(OABT_BRANCHES)) {
+  PROFILES[id] = buildAgsProfile(id, spec);
+}
 
 export const DEFAULT_PROFILE = "kpssLisans";
 
@@ -66,6 +175,21 @@ export const PROFILE_OPTIONS = Object.values(PROFILES).map((p) => ({
   id: p.id,
   examName: p.examName
 }));
+
+/* ---------------------------------------------------------------
+   SIGNUP PICKER — two-step exam-type → (AGS only) branch.
+   --------------------------------------------------------------- */
+
+/** Top-level exam types. KPSS maps straight to a profile; AGS needs a branch. */
+export const EXAM_TYPES = [
+  { type: "kpss", label: "KPSS Lisans (GY-GK)", profileId: "kpssLisans" },
+  { type: "ags", label: "AGS (Akademi Giriş Sınavı)" }
+];
+
+/** AGS branches for the second-step dropdown ({ id, branchName }). */
+export const AGS_BRANCH_OPTIONS = Object.values(PROFILES)
+  .filter((p) => p.examType === "ags")
+  .map((p) => ({ id: p.id, branchName: p.branchName }));
 
 /* ---------------------------------------------------------------
    ACTIVE PROFILE — live bindings consumed across the app.
@@ -119,8 +243,7 @@ export const REVIEW_INTERVALS = [1, 3, 7, 14, 30]; // gün
    pages lead; progress/tracking follows.
    --------------------------------------------------------------- */
 export const NAV_ITEMS = [
-  { page: "deneme",  label: "Genel Denemeler", ic: "GD", group: "Yanlış Analizi" },
-  { page: "alan",    label: "Alan Denemeleri", ic: "AD", group: "Yanlış Analizi" },
+  { page: "deneme",  label: "Denemeler",       ic: "DN", group: "Yanlış Analizi" },
   { page: "konu",    label: "Konu Testleri",   ic: "KT", group: "Yanlış Analizi" },
   { page: "analiz",  label: "Analiz",          ic: "AN", group: "İlerleme" },
   { page: "tekrar",  label: "Tekrar",          ic: "TK", group: "İlerleme", badge: "revBadge" },

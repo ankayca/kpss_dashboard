@@ -9,7 +9,7 @@
    ============================================================ */
 
 const API_BASE = "/api";
-export const COLLECTIONS = ["books", "sessions", "trials", "subjectTrials", "reviews"];
+export const COLLECTIONS = ["books", "sessions", "trials", "reviews"];
 
 let currentUser = "ahmet";
 let online = false;

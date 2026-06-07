@@ -19,13 +19,7 @@ import {
 } from "./features/books.js";
 import { addTrial, deleteTrial, tagTrialTopicsEarly, recalcNet } from "./features/trials.js";
 import { switchAnalyticsTab } from "./features/analytics.js";
-import { generalPhotoImporter, subjectPhotoImporter } from "./features/photoImport.js";
-import {
-  addSubjectTrial,
-  deleteSubjectTrial,
-  recalcSubjectNet,
-  onSubjSectionChange
-} from "./features/subjectTrials.js";
+import { generalPhotoImporter } from "./features/photoImport.js";
 import {
   addReviewManual,
   addReviewQuick,
@@ -70,10 +64,6 @@ const ACTIONS = {
   photoCamera: () => generalPhotoImporter.openCamera(),
   runPhotoClassify: () => generalPhotoImporter.runClassify(),
   clearPhotoResults: () => generalPhotoImporter.clearResults(),
-  subjPhotoCamera: () => subjectPhotoImporter.openCamera(),
-  runSubjPhotoClassify: () => subjectPhotoImporter.runClassify(),
-  clearSubjPhotoResults: () => subjectPhotoImporter.clearResults(),
-  addSubjectTrial: () => addSubjectTrial(),
   addReviewManual: () => addReviewManual(),
   saveExamDate: () => saveExamDate(),
   saveTarget: () => saveTarget(),
@@ -94,7 +84,6 @@ const ROW_ACTIONS = {
   delbook: (el) => deleteBook(el.dataset.id),
   delsess: (el) => deleteSession(el.dataset.id),
   deltrial: (el) => deleteTrial(el.dataset.id),
-  delsubjtrial: (el) => deleteSubjectTrial(el.dataset.id),
   addrev: (el) => addReviewQuick(el.dataset.lesson, el.dataset.topic),
   revdone: (el) => reviewDone(el.dataset.id),
   revdel: (el) => removeReview(el.dataset.id)
@@ -127,20 +116,13 @@ export function setupEventListeners() {
   on("revLesson", "change", fillRevTopics);
   on("importFile", "change", (e) => importData(e));
 
-  // Photo→topic AI importers own their own DOM wiring (file inputs, drop
+  // Photo→topic AI importer owns its own DOM wiring (file inputs, drop
   // zone, booklet picker, confirm-list toggles).
   generalPhotoImporter.init();
-  subjectPhotoImporter.init();
 
-  // Genel deneme net inputs.
+  // Deneme net inputs.
   const netInputs = $("netInputs");
   if (netInputs) netInputs.addEventListener("input", recalcNet);
-
-  // Alan deneme (subject trial) inputs. Switching ders re-scopes the AI, so
-  // the existing confirm matches are cleared.
-  on("subjDogru", "input", recalcSubjectNet);
-  on("subjYanlis", "input", recalcSubjectNet);
-  on("subjTrialSection", "change", onSubjSectionChange);
 
   window.addEventListener("hashchange", () => nav(location.hash.replace("#", "")));
 }

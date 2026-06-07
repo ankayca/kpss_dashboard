@@ -80,37 +80,6 @@ export function normalizeTrial(t) {
   };
 }
 
-export function normalizeSubjectTrial(t) {
-  if (!t || typeof t !== "object") return null;
-  const id = asId(t.id);
-  if (!id || !asStr(t.date, 12)) return null;
-  const section = t.section;
-  if (!SECTIONS[section]) return null;
-  const d = Math.max(0, asNum(t.d, 0));
-  const y = Math.max(0, asNum(t.y, 0));
-  // Keep wrongTopicTags in the same nested shape as general trials so the
-  // domain helpers (listTrialWrongEntries, mastery, …) can be reused as-is.
-  let wrongTopicTags = {};
-  if (t.wrongTopicTags && typeof t.wrongTopicTags === "object") {
-    SECTION_KEYS.forEach((k) => {
-      if (t.wrongTopicTags[k] && typeof t.wrongTopicTags[k] === "object") {
-        wrongTopicTags[k] = { ...t.wrongTopicTags[k] };
-      }
-    });
-  }
-  return {
-    id,
-    date: asStr(t.date, 12),
-    section,
-    duration: Math.max(0, asNum(t.duration, 0)),
-    d,
-    y,
-    net: d - y * 0.25,
-    notes: asStr(t.notes, 2000),
-    wrongTopicTags
-  };
-}
-
 export function normalizeReview(r) {
   if (!r || typeof r !== "object") return null;
   const id = asId(r.id);
@@ -138,9 +107,6 @@ export function normalizeImport(payload) {
     trials: (Array.isArray(payload.trials) ? payload.trials : [])
       .map(normalizeTrial)
       .filter(Boolean),
-    subjectTrials: (Array.isArray(payload.subjectTrials) ? payload.subjectTrials : [])
-      .map(normalizeSubjectTrial)
-      .filter(Boolean),
     reviews: (Array.isArray(payload.reviews) ? payload.reviews : [])
       .map(normalizeReview)
       .filter(Boolean),
@@ -152,7 +118,6 @@ export const Data = {
   normalizeBook,
   normalizeSession,
   normalizeTrial,
-  normalizeSubjectTrial,
   normalizeReview,
   normalizeImport
 };
